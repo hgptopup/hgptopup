@@ -1,0 +1,7 @@
+{
+  "name": "complete Hasibul Game Point",
+  "description": "Hasibul Game Point (HGP) - A premium, futuristic game top-up marketplace for competitive gamers.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
