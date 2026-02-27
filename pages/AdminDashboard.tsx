@@ -119,23 +119,25 @@ const AdminDashboard: React.FC = () => {
     console.log("HGP DEBUG: Testing edge functions for order:", testOrder.id);
     
     // 2. Test Telegram
+    console.log("HGP DEBUG: Invoking Telegram Edge Function...");
     const tgResult = await sendTelegramNotification(testOrder);
     if (!tgResult) {
-      alert("Telegram Test: FAILED\n\nReason: The Edge Function 'send-telegram-notification' was not found or failed to respond. Have you deployed it using 'supabase functions deploy'?");
+      alert("❌ Telegram Test: FAILED\n\nPossible Reasons:\n1. Edge Function not deployed.\n2. TELEGRAM_BOT_TOKEN or CHAT_ID secrets not set in Supabase.\n3. Bot is blocked by user.");
     } else {
-      alert("Telegram Test: SUCCESS");
+      alert("✅ Telegram Test: SUCCESS\n\nCheck your Telegram bot for the message.");
     }
     
     // 3. Test Email
     if (profile?.email) {
+      console.log("HGP DEBUG: Invoking Email Edge Function...");
       const emailResult = await sendOrderNotification(testOrder, profile.email, profile.full_name || 'Test User');
       if (!emailResult) {
-        alert("Email Test: FAILED\n\nReason: The Edge Function 'send-order-email' was not found or failed to respond. Have you deployed it using 'supabase functions deploy'?");
+        alert("❌ Email Test: FAILED\n\nPossible Reasons:\n1. Edge Function not deployed.\n2. SMTP_PASSWORD or SMTP_USERNAME secrets not set in Supabase.\n3. Gmail App Password is invalid or revoked.");
       } else {
-        alert("Email Test: SUCCESS");
+        alert("✅ Email Test: SUCCESS\n\nCheck your email inbox (and spam folder).");
       }
     } else {
-      alert("Email Test: SKIPPED (No user email found for this test order)");
+      alert("⚠️ Email Test: SKIPPED\n\nReason: The test user for this order has no email address in their profile.");
     }
   };
 

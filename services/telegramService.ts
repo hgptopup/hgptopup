@@ -9,9 +9,10 @@ export const sendTelegramNotification = async (order: Order) => {
       body: { order },
     });
 
-    if (error) {
-      console.error("HGP TELEGRAM ERROR:", error);
-      alert(`Telegram Error: ${error.message || 'Failed to connect to Edge Function'}`);
+    if (error || (data && data.success === false)) {
+      const errorMsg = error?.message || data?.error || 'Unknown Telegram Error';
+      console.error("HGP TELEGRAM ERROR:", errorMsg);
+      alert(`Telegram Error: ${errorMsg}`);
       return false;
     }
 

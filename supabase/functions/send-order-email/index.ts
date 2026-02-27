@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { order, userEmail, userName, pdfBase64, fileName } = await req.json()
+    const { order, userEmail, userName, pdfBase64, fileName, isAdminAlert } = await req.json()
 
     // SMTP Configuration from Environment Variables
     const SMTP_HOSTNAME = Deno.env.get('SMTP_HOSTNAME') || 'smtp.gmail.com'
@@ -46,20 +46,27 @@ serve(async (req) => {
 
     // Prepare Email Content
     const isCompleted = order.status === 'COMPLETED';
-    const subject = isCompleted 
+    let subject = isCompleted 
       ? `Deployment Successful - HGP #${order.id}`
       : `Order Confirmation - HGP #${order.id}`;
+
+    if (isAdminAlert) {
+      subject = `🚨 NEW ORDER RECEIVED - HGP #${order.id}`;
+    }
 
     const htmlContent = `
       <div style="font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
         <h2 style="color: #dc2626;">Hasibul Game Point</h2>
         <p>Hello <strong>${userName}</strong>,</p>
         
-        ${isCompleted 
-          ? `<p style="color: #16a34a; font-weight: bold; font-size: 18px;">Your order has been successfully processed and deployed!</p>
-             <p>The items have been added to your account. Thank you for choosing HGP.</p>`
-          : `<p>Thank you for your order! We have received your request and it is being processed.</p>
-             <p>Deployment usually takes 5-30 minutes.</p>`
+        ${isAdminAlert 
+          ? `<p style="color: #dc2626; font-weight: bold; font-size: 18px;">New Order Alert!</p>
+             <p>A new order has been placed on the store. Please check the admin dashboard to process it.</p>`
+          : isCompleted 
+            ? `<p style="color: #16a34a; font-weight: bold; font-size: 18px;">Your order has been successfully processed and deployed!</p>
+               <p>The items have been added to your account. Thank you for choosing HGP.</p>`
+            : `<p>Thank you for your order! We have received your request and it is being processed.</p>
+               <p>Deployment usually takes 5-30 minutes.</p>`
         }
         
         <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
@@ -105,9 +112,9 @@ serve(async (req) => {
 
   } catch (error) {
     console.error("Email Error:", error.message)
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ success: false, error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 400,
+      status: 200,
     })
   }
 })

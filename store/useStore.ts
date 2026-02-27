@@ -3,6 +3,8 @@ import { create } from 'zustand';
 import { User, Order, CartItem, Role, Game, GamePackage } from '../types';
 import { supabase } from '../services/supabaseClient';
 import { GAMES as INITIAL_GAMES } from '../constants';
+import { sendOrderNotification } from '../services/mailService';
+import { sendTelegramNotification } from '../services/telegramService';
 
 export interface HeroBanner {
   id: string;
@@ -233,6 +235,21 @@ export const useStore = create<AppState>((set, get) => ({
     }]);
 
     if (!dbError) {
+      // Trigger Notifications
+      console.log("HGP DEBUG: Order saved to DB. Triggering notifications...");
+      
+      sendTelegramNotification(order).then(res => 
+        console.log(`HGP DEBUG: Telegram notification result: ${res ? 'SUCCESS' : 'FAILED'}`)
+      );
+      
+      sendOrderNotification(order, user.email, user.name).then(res => 
+        console.log(`HGP DEBUG: User email notification result: ${res ? 'SUCCESS' : 'FAILED'}`)
+      );
+      
+      sendOrderNotification(order, ADMIN_EMAIL, "Admin", undefined, true).then(res => 
+        console.log(`HGP DEBUG: Admin email notification result: ${res ? 'SUCCESS' : 'FAILED'}`)
+      );
+
       get().clearCart();
       await get().fetchOrders();
       if (get().isAdmin) await get().fetchAllOrders();
