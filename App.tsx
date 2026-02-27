@@ -14,12 +14,14 @@ import AdminDashboard from './pages/AdminDashboard';
 import CartDrawer from './components/CartDrawer';
 import SupportModal from './components/SupportModal';
 import AuthModal from './components/AuthModal';
+import SplashScreen from './components/SplashScreen';
 import { Game } from './types';
 import { useStore } from './store/useStore';
 import { supabase } from './services/supabaseClient';
 import { GAMES as INITIAL_GAMES } from './constants';
 
 const App: React.FC = () => {
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
   const [showProfile, setShowProfile] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
@@ -41,7 +43,16 @@ const App: React.FC = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session?.user ?? null);
     });
-    return () => subscription.unsubscribe();
+
+    // Splash screen timer
+    const timer = setTimeout(() => {
+      setIsInitialLoading(false);
+    }, 1500);
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timer);
+    };
   }, [setSession, fetchGames]);
 
   const handleGoHome = () => {
@@ -128,6 +139,10 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-black text-white">
+      <AnimatePresence>
+        {isInitialLoading && <SplashScreen />}
+      </AnimatePresence>
+
       <Navbar 
         onOpenCart={() => setIsCartOpen(true)} 
         onOpenSupport={() => setIsSupportOpen(true)}
