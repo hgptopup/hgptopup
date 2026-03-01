@@ -52,6 +52,8 @@ export interface Order {
   totalAmount: number;
   status: 'PENDING' | 'COMPLETED' | 'CANCELLED';
   createdAt: string;
+  transactionId?: string;
+  paymentMethod?: string;
 }
 
 export interface NavLink {

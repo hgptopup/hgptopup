@@ -313,7 +313,7 @@ const AdminDashboard: React.FC = () => {
                    <table className="w-full text-left">
                       <thead>
                          <tr className="text-[10px] font-bold text-white/40 uppercase tracking-widest border-b border-white/5">
-                            <th className="p-6">Order ID</th><th className="p-6">Method</th><th className="p-6">Target Intel</th><th className="p-6">Status</th><th className="p-6">Amount</th><th className="p-6 text-right">Actions</th>
+                            <th className="p-6">Order ID</th><th className="p-6">Payment</th><th className="p-6">Target Intel</th><th className="p-6">Status</th><th className="p-6">Amount</th><th className="p-6 text-right">Actions</th>
                          </tr>
                       </thead>
                       <tbody className="divide-y divide-white/5">
@@ -321,9 +321,8 @@ const AdminDashboard: React.FC = () => {
                             <tr key={order.id} className="hover:bg-white/[0.02] transition-colors group cursor-pointer" onClick={() => setSelectedOrderDetails(order)}>
                                <td className="p-6 font-mono text-xs text-white/60">{order.id}</td>
                                <td className="p-6">
-                                 {order.items?.map((item, idx) => (
-                                    <div key={idx} className="text-[10px] font-bold uppercase tracking-widest text-white/40">{item.loginMethod}</div>
-                                 ))}
+                                 <div className="text-[10px] font-bold uppercase tracking-widest text-white/40">{order.paymentMethod || 'N/A'}</div>
+                                 <div className="text-[10px] font-mono text-red-500/60 mt-1">{order.transactionId || 'No TrxID'}</div>
                                </td>
                                <td className="p-6">
                                  {order.items?.map((item, i) => (
@@ -448,6 +447,16 @@ const AdminDashboard: React.FC = () => {
                </div>
 
                <div className="space-y-8">
+                  <div className="grid grid-cols-2 gap-4">
+                     <div className="bg-black/40 p-4 rounded-2xl border border-white/5">
+                       <p className="text-[9px] font-bold text-white/20 uppercase tracking-widest mb-1">Payment Method</p>
+                       <p className="text-sm font-bold text-white">{selectedOrderDetails.paymentMethod || 'N/A'}</p>
+                     </div>
+                     <div className="bg-black/40 p-4 rounded-2xl border border-white/5">
+                       <p className="text-[9px] font-bold text-white/20 uppercase tracking-widest mb-1">Transaction ID</p>
+                       <p className="text-sm font-mono font-bold text-red-500 select-all">{selectedOrderDetails.transactionId || 'N/A'}</p>
+                     </div>
+                  </div>
                   {selectedOrderDetails.items.map((item, idx) => (
                     <div key={idx} className="glass p-6 rounded-3xl border border-white/5 bg-gradient-to-br from-white/[0.02] to-transparent">
                       <div className="flex gap-6 mb-8 items-start">

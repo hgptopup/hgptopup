@@ -2,77 +2,76 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '../store/useStore';
-import { sendOrderNotification } from '../services/mailService';
-import { sendTelegramNotification } from '../services/telegramService';
 
 interface CartDrawerProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const MERCHANT_NUMBER = "+8801878666388";
-
 const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
   const { cart, removeFromCart, addOrder, user, clearCart } = useStore();
   const [isProcessing, setIsProcessing] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'bkash' | 'nagad' | null>(null);
-  const [transactionId, setTransactionId] = useState('');
-  const [copied, setCopied] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'bKash' | 'Nagad' | 'Rocket' | null>(null);
+  const [transactionId, setTransactionId] = useState('');
   
   const total = cart.reduce((acc, item) => acc + item.price, 0);
 
-  const handleCopyNumber = () => {
-    navigator.clipboard.writeText(MERCHANT_NUMBER);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
   const handleCheckout = async () => {
-    if (!paymentMethod || !transactionId) {
-      alert("Please complete the payment details.");
-      return;
-    }
-
-    setIsProcessing(true);
-    
-    const orderData = {
-      id: 'ORD-' + Math.random().toString(36).substr(2, 9).toUpperCase(),
-      userId: user?.id || 'guest',
-      items: [...cart],
-      totalAmount: total,
-      status: 'PENDING' as const,
-      createdAt: new Date().toISOString()
-    };
-
-    const success = await addOrder(orderData);
-    
-    if (success) {
-      // Send email notification in background
-      if (user?.email) {
-        sendOrderNotification(orderData, user.email, user.name || 'Valued Customer')
-          .then(sent => console.log(sent ? "Order email dispatched" : "Order email failed"));
+    try {
+      if (!paymentMethod || !transactionId) {
+        alert("Please select a payment method and enter Transaction ID.");
+        return;
       }
 
-      // Send telegram notification to admin
-      sendTelegramNotification(orderData)
-        .then(sent => console.log(sent ? "Telegram notification dispatched" : "Telegram notification failed"));
+      setIsProcessing(true);
+      const orderId = 'ORD-' + Math.random().toString(36).substr(2, 9).toUpperCase();
       
-      setShowSuccess(true);
-      clearCart();
-      setShowPayment(false);
+      const orderData = {
+        id: orderId,
+        userId: user?.id || 'guest',
+        items: [...cart],
+        totalAmount: total,
+        status: 'PENDING' as const,
+        createdAt: new Date().toISOString(),
+        transactionId: transactionId,
+        paymentMethod: paymentMethod
+      };
+
+      console.log("HGP DEBUG: Initiating checkout for order:", orderId);
+      const success = await addOrder(orderData);
+      
+      if (success) {
+        setShowSuccess(true);
+      } else {
+        alert("Failed to place order. Please check your connection and try again.");
+      }
+    } catch (error: any) {
+      console.error("HGP Checkout Error:", error);
+      alert("Checkout Error: " + (error.message || "Unknown error occurred"));
+    } finally {
+      setIsProcessing(false);
     }
-    
-    setIsProcessing(false);
   };
 
   const resetDrawer = () => {
     setShowPayment(false);
+    setShowSuccess(false);
     setPaymentMethod(null);
     setTransactionId('');
-    setShowSuccess(false);
     onClose();
+  };
+
+  const paymentNumbers = {
+    bKash: "+8801878666388",
+    Nagad: "+8801878666388",
+    Rocket: "+8801878666388"
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    alert("Number copied to clipboard!");
   };
 
   return (
@@ -120,7 +119,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                       </svg>
                     </div>
-                    <h3 className="text-2xl font-display font-bold mb-2 text-white">Order Received</h3>
+                    <h3 className="text-2xl font-display font-bold mb-2 text-white">Order Successful</h3>
                     <p className="text-white/40 text-sm mb-8 px-6 font-medium leading-relaxed">
                       We have received your payment intel. Deployment usually starts within 5-30 minutes. You can track this in your profile history.
                     </p>
@@ -191,45 +190,62 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                     </button>
 
                     <div className="space-y-4">
-                      <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Select Gateway</p>
-                      <div className="grid grid-cols-2 gap-3">
-                        <button 
-                          onClick={() => setPaymentMethod('bkash')}
-                          className={`p-4 rounded-2xl border transition-all font-bold ${paymentMethod === 'bkash' ? 'bg-pink-600/20 border-pink-600 text-pink-500 shadow-lg shadow-pink-600/10' : 'bg-white/5 border-white/5 hover:border-white/10 text-white/60'}`}
-                        >
-                          bKash
-                        </button>
-                        <button 
-                          onClick={() => setPaymentMethod('nagad')}
-                          className={`p-4 rounded-2xl border transition-all font-bold ${paymentMethod === 'nagad' ? 'bg-orange-600/20 border-orange-600 text-orange-500 shadow-lg shadow-orange-600/10' : 'bg-white/5 border-white/5 hover:border-white/10 text-white/60'}`}
-                        >
-                          Nagad
-                        </button>
+                      <div className="grid grid-cols-3 gap-3">
+                        {(['bKash', 'Nagad', 'Rocket'] as const).map((method) => (
+                          <button
+                            key={method}
+                            onClick={() => setPaymentMethod(method)}
+                            className={`p-3 rounded-xl border transition-all text-xs font-bold ${
+                              paymentMethod === method 
+                                ? 'bg-red-600 border-red-600 text-white' 
+                                : 'bg-white/5 border-white/10 text-white/60 hover:border-white/20'
+                            }`}
+                          >
+                            {method}
+                          </button>
+                        ))}
                       </div>
-                    </div>
 
-                    <div className="glass p-5 rounded-2xl border border-white/5">
-                      <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-3">Merchant Number (Send Money)</p>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xl font-display font-bold text-white tracking-widest">{MERCHANT_NUMBER}</span>
-                        <button 
-                          onClick={handleCopyNumber}
-                          className={`px-4 py-2 rounded-xl text-[10px] font-bold transition-all uppercase tracking-widest ${copied ? 'bg-green-600/20 text-green-500' : 'bg-red-600/20 text-red-500 hover:bg-red-600/30'}`}
+                      {paymentMethod && (
+                        <motion.div 
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="glass p-4 rounded-2xl border border-white/10 space-y-3"
                         >
-                          {copied ? 'Copied' : 'Copy'}
-                        </button>
-                      </div>
-                    </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs text-white/40 uppercase tracking-widest font-bold">Send Money to:</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-mono text-white font-bold">{paymentNumbers[paymentMethod]}</span>
+                              <button 
+                                onClick={() => copyToClipboard(paymentNumbers[paymentMethod])}
+                                className="p-1.5 bg-white/5 hover:bg-white/10 rounded-lg transition-colors text-red-500"
+                                title="Copy Number"
+                              >
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                                </svg>
+                              </button>
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-[10px] text-white/40 uppercase tracking-widest font-bold block">Transaction ID</label>
+                            <input
+                              type="text"
+                              value={transactionId}
+                              onChange={(e) => setTransactionId(e.target.value)}
+                              placeholder="Enter TrxID after payment"
+                              className="w-full bg-black/40 border border-white/10 rounded-xl py-3 px-4 text-sm focus:outline-none focus:border-red-600 transition-all text-white font-mono"
+                            />
+                          </div>
+                        </motion.div>
+                      )}
 
-                    <div className="space-y-3">
-                      <label className="block text-[10px] font-bold text-white/40 uppercase tracking-widest ml-1">Transaction ID</label>
-                      <input 
-                        type="text" 
-                        placeholder="Enter the transaction code..."
-                        value={transactionId}
-                        onChange={(e) => setTransactionId(e.target.value)}
-                        className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-5 text-sm font-medium focus:outline-none focus:border-red-600 focus:bg-white/[0.08] transition-all placeholder:text-white/20 text-white"
-                      />
+                      <div className="glass p-4 rounded-2xl border border-white/5 text-center space-y-2">
+                        <h3 className="text-sm font-bold text-white">Manual Payment</h3>
+                        <p className="text-white/40 text-[10px] leading-relaxed">
+                          Please send the total amount to the number above and provide the Transaction ID. Our team will verify and process your order manually.
+                        </p>
+                      </div>
                     </div>
                   </motion.div>
                 )}
@@ -259,9 +275,9 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                   </button>
                 ) : (
                   <button 
-                    disabled={isProcessing || !paymentMethod || !transactionId}
+                    disabled={isProcessing}
                     onClick={handleCheckout}
-                    className={`w-full py-4 rounded-2xl font-bold transition-all flex items-center justify-center space-x-2 ${isProcessing || !paymentMethod || !transactionId ? 'bg-white/5 text-white/20 cursor-not-allowed border border-white/5' : 'bg-red-600 hover:bg-red-700 text-white shadow-xl shadow-red-600/20'}`}
+                    className={`w-full py-4 rounded-2xl font-bold transition-all flex items-center justify-center space-x-2 ${isProcessing ? 'bg-white/5 text-white/20 cursor-not-allowed border border-white/5' : 'bg-red-600 hover:bg-red-700 text-white shadow-xl shadow-red-600/20'}`}
                   >
                     {isProcessing ? (
                       <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
@@ -270,9 +286,9 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                       </svg>
                     ) : (
                       <>
-                        <span>Submit Operation</span>
+                        <span>Pay Now</span>
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                         </svg>
                       </>
                     )}

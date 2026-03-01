@@ -1,4 +1,5 @@
 
+import { jsPDF } from 'jspdf';
 import { create } from 'zustand';
 import { User, Order, CartItem, Role, Game, GamePackage } from '../types';
 import { supabase } from '../services/supabaseClient';
@@ -192,7 +193,9 @@ export const useStore = create<AppState>((set, get) => ({
         items: o.items, 
         totalAmount: Number(o.total_amount),
         status: o.status,
-        createdAt: o.created_at
+        createdAt: o.created_at,
+        transactionId: o.transaction_id || 'N/A',
+        paymentMethod: o.payment_method || 'N/A'
       }))});
     }
   },
@@ -207,7 +210,9 @@ export const useStore = create<AppState>((set, get) => ({
         items: o.items, 
         totalAmount: Number(o.total_amount),
         status: o.status,
-        createdAt: o.created_at
+        createdAt: o.created_at,
+        transactionId: o.transaction_id || 'N/A',
+        paymentMethod: o.payment_method || 'N/A'
       }))});
     }
   },
@@ -223,38 +228,96 @@ export const useStore = create<AppState>((set, get) => ({
 
   addOrder: async (order) => {
     const { user } = get();
-    if (!user) return false;
+    if (!user) {
+      console.error("HGP ERROR: No user found in store during addOrder");
+      return false;
+    }
 
-    // Insert into DB only - Telegram notification system removed
+    console.log("HGP DEBUG: Saving order to Supabase...", order.id);
+    
+    // Insert into DB - Removed payment_method and transaction_id to avoid PGRST204 error
+    // since these columns are missing in the user's Supabase schema.
     const { error: dbError } = await supabase.from('orders').insert([{
       id: order.id,
       user_id: user.id,
       items: order.items,
       total_amount: order.totalAmount,
       status: order.status
+      // transaction_id and payment_method removed from here
     }]);
 
-    if (!dbError) {
-      // Trigger Notifications
-      console.log("HGP DEBUG: Order saved to DB. Triggering notifications...");
-      
-      sendTelegramNotification(order).then(res => 
-        console.log(`HGP DEBUG: Telegram notification result: ${res ? 'SUCCESS' : 'FAILED'}`)
-      );
-      
-      sendOrderNotification(order, user.email, user.name).then(res => 
-        console.log(`HGP DEBUG: User email notification result: ${res ? 'SUCCESS' : 'FAILED'}`)
-      );
-      
-      sendOrderNotification(order, ADMIN_EMAIL, "Admin", undefined, true).then(res => 
-        console.log(`HGP DEBUG: Admin email notification result: ${res ? 'SUCCESS' : 'FAILED'}`)
-      );
-
-      get().clearCart();
-      await get().fetchOrders();
-      if (get().isAdmin) await get().fetchAllOrders();
-      return true;
+    if (dbError) {
+      console.error("HGP DB ERROR:", dbError);
+      alert(`Database Error: ${dbError.message}`);
+      return false;
     }
-    return false;
+
+    // Generate PDF Receipt
+    let pdfDataUri = '';
+    try {
+      console.log("HGP DEBUG: Generating PDF Receipt...");
+      const doc = new jsPDF();
+      doc.setFontSize(22);
+      doc.setTextColor(220, 38, 38);
+      doc.text('Hasibul Game Point', 20, 20);
+      
+      doc.setFontSize(12);
+      doc.setTextColor(0, 0, 0);
+      doc.text(`Order ID: ${order.id}`, 20, 40);
+      doc.text(`Date: ${new Date().toLocaleString()}`, 20, 50);
+      doc.text(`Customer: ${user.name}`, 20, 60);
+      doc.text(`Email: ${user.email}`, 20, 70);
+      
+      doc.line(20, 75, 190, 75);
+      
+      doc.setFontSize(14);
+      doc.text('Order Items:', 20, 85);
+      
+      let y = 95;
+      order.items.forEach((item) => {
+        doc.setFontSize(12);
+        doc.text(`${item.gameTitle} - ${item.packageName}`, 25, y);
+        doc.setFontSize(10);
+        doc.text(`Target ID: ${item.playerId}`, 30, y + 5);
+        y += 15;
+      });
+      
+      doc.line(20, y, 190, y);
+      y += 10;
+      doc.setFontSize(14);
+      doc.text(`Total Amount: ${order.totalAmount} BDT`, 20, y);
+      y += 10;
+      doc.text(`Payment Method: ${order.paymentMethod}`, 20, y);
+      y += 10;
+      doc.text(`Transaction ID: ${order.transactionId}`, 20, y);
+      
+      doc.setFontSize(10);
+      doc.setTextColor(150, 150, 150);
+      doc.text('Thank you for choosing HGP Crimson Protocol.', 20, y + 20);
+      
+      pdfDataUri = doc.output('datauristring');
+      console.log("HGP DEBUG: PDF Generation Success.");
+    } catch (pdfErr: any) {
+      console.error("HGP PDF ERROR:", pdfErr);
+      // We don't return false here because the order is already saved in DB
+    }
+
+    // Trigger Notifications
+    console.log("HGP DEBUG: Triggering notifications...");
+    
+    // Admin: Telegram Only
+    sendTelegramNotification(order).then(res => 
+      console.log(`HGP DEBUG: Telegram notification result: ${res ? 'SUCCESS' : 'FAILED'}`)
+    );
+    
+    // User: Email with PDF
+    sendOrderNotification(order, user.email, user.name, pdfDataUri).then(res => 
+      console.log(`HGP DEBUG: User email notification result: ${res ? 'SUCCESS' : 'FAILED'}`)
+    );
+
+    get().clearCart();
+    await get().fetchOrders();
+    if (get().isAdmin) await get().fetchAllOrders();
+    return true;
   }
 }));

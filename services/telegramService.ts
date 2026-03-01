@@ -1,24 +1,23 @@
-import { supabase } from "./supabaseClient";
+import axios from "axios";
 import { Order } from "../types";
 
 export const sendTelegramNotification = async (order: Order) => {
   try {
-    console.log("HGP TELEGRAM: Sending notification to admin...");
+    console.log("HGP TELEGRAM: Sending notification to admin via local API...");
     
-    const { data, error } = await supabase.functions.invoke('send-telegram-notification', {
-      body: { order },
+    const response = await axios.post('/api/notifications/telegram', {
+      order
     });
 
-    if (error || (data && data.success === false)) {
-      const errorMsg = error?.message || data?.error || 'Unknown Telegram Error';
+    if (!response.data.success) {
+      const errorMsg = response.data.error || 'Unknown Telegram Error';
       console.error("HGP TELEGRAM ERROR:", errorMsg);
-      alert(`Telegram Error: ${errorMsg}`);
       return false;
     }
 
     return true;
-  } catch (error) {
-    console.error("HGP TELEGRAM FATAL ERROR:", error);
+  } catch (error: any) {
+    console.error("HGP TELEGRAM FATAL ERROR:", error.response?.data || error.message);
     return false;
   }
 };
