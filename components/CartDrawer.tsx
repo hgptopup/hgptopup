@@ -89,16 +89,16 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
-            className="fixed top-0 right-0 h-full w-full max-w-md glass-dark border-l border-white/10 z-[70] shadow-2xl flex flex-col"
+            className="fixed top-0 right-0 h-full w-full max-w-md glass border-l border-black/10 z-[70] shadow-2xl flex flex-col"
           >
-            <div className="p-6 border-b border-white/5 flex justify-between items-center bg-red-950/20">
-              <h2 className="text-2xl font-display font-bold flex items-center gap-3 text-white">
-                <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="p-6 border-b border-black/5 flex justify-between items-center bg-red-600/5">
+              <h2 className="text-2xl font-display font-bold flex items-center gap-3 text-slate-900">
+                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                 </svg>
                 {showSuccess ? 'Success' : showPayment ? 'Secure Payment' : 'My Cart'}
               </h2>
-              <button onClick={resetDrawer} className="p-2 hover:bg-white/5 rounded-full transition-colors text-white">
+              <button onClick={resetDrawer} className="p-2 hover:bg-black/5 rounded-full transition-colors text-slate-900">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -115,12 +115,12 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                     className="h-full flex flex-col items-center justify-center text-center py-10"
                   >
                     <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mb-6 border border-green-500/30">
-                      <svg className="w-10 h-10 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                       </svg>
                     </div>
-                    <h3 className="text-2xl font-display font-bold mb-2 text-white">Order Successful</h3>
-                    <p className="text-white/40 text-sm mb-8 px-6 font-medium leading-relaxed">
+                    <h3 className="text-2xl font-display font-bold mb-2 text-slate-900">Order Successful</h3>
+                    <p className="text-slate-500 text-sm mb-8 px-6 font-medium leading-relaxed">
                       We have received your payment intel. Deployment usually starts within 5-30 minutes. You can track this in your profile history.
                     </p>
                     <button onClick={resetDrawer} className="w-full py-4 bg-green-600 hover:bg-green-700 text-white font-bold rounded-2xl transition-all shadow-xl shadow-green-600/20 uppercase tracking-widest text-xs">Understood</button>
@@ -135,32 +135,32 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                   >
                     {cart.length === 0 ? (
                       <div className="h-full flex flex-col items-center justify-center text-center opacity-40 py-20">
-                        <div className="w-20 h-20 border-2 border-dashed border-white/20 rounded-full flex items-center justify-center mb-4 text-white">
+                        <div className="w-20 h-20 border-2 border-dashed border-black/20 rounded-full flex items-center justify-center mb-4 text-slate-900">
                           <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
                         </div>
-                        <p className="text-white">Your cart is empty.</p>
-                        <button onClick={onClose} className="mt-4 text-red-500 font-bold hover:underline">Browse Games</button>
+                        <p className="text-slate-900">Your cart is empty.</p>
+                        <button onClick={onClose} className="mt-4 text-red-600 font-bold hover:underline">Browse Games</button>
                       </div>
                     ) : (
                       cart.map((item) => (
                         <motion.div 
                           layout
                           key={item.cartId}
-                          className="glass p-4 rounded-2xl flex items-center gap-4 relative overflow-hidden group border border-white/5"
+                          className="glass p-4 rounded-2xl flex items-center gap-4 relative overflow-hidden group border border-black/5"
                         >
                           <img src={item.image} className="w-16 h-16 rounded-xl object-cover" alt={item.gameTitle} />
                           <div className="flex-1">
-                            <h4 className="font-bold text-sm leading-tight text-white">{item.gameTitle}</h4>
-                            <p className="text-xs text-white/60 mb-1">{item.packageName}</p>
-                            <p className="text-[10px] font-mono text-red-400 truncate max-w-[150px]">ID: {item.playerId}</p>
+                            <h4 className="font-bold text-sm leading-tight text-slate-900">{item.gameTitle}</h4>
+                            <p className="text-xs text-slate-500 mb-1">{item.packageName}</p>
+                            <p className="text-[10px] font-mono text-red-600 truncate max-w-[150px]">ID: {item.playerId}</p>
                           </div>
                           <div className="text-right">
-                            <p className="font-bold text-sm mb-2 text-white">৳{item.price.toFixed(0)}</p>
+                            <p className="font-bold text-sm mb-2 text-slate-900">৳{item.price.toFixed(0)}</p>
                             <button 
                               onClick={() => removeFromCart(item.cartId)}
-                              className="text-white/20 hover:text-red-500 transition-colors"
+                              className="text-slate-300 hover:text-red-600 transition-colors"
                             >
                               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -181,7 +181,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                   >
                     <button 
                       onClick={() => setShowPayment(false)}
-                      className="text-xs font-bold text-red-500 uppercase tracking-widest flex items-center gap-2 hover:text-red-400 transition-colors mb-4"
+                      className="text-xs font-bold text-red-600 uppercase tracking-widest flex items-center gap-2 hover:text-red-700 transition-colors mb-4"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
@@ -198,7 +198,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                             className={`p-3 rounded-xl border transition-all text-xs font-bold ${
                               paymentMethod === method 
                                 ? 'bg-red-600 border-red-600 text-white' 
-                                : 'bg-white/5 border-white/10 text-white/60 hover:border-white/20'
+                                : 'bg-slate-50 border-black/10 text-slate-500 hover:border-black/20'
                             }`}
                           >
                             {method}
@@ -210,15 +210,15 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                         <motion.div 
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
-                          className="glass p-4 rounded-2xl border border-white/10 space-y-3"
+                          className="glass p-4 rounded-2xl border border-black/10 space-y-3"
                         >
                           <div className="flex justify-between items-center">
-                            <span className="text-xs text-white/40 uppercase tracking-widest font-bold">Send Money to:</span>
+                            <span className="text-xs text-slate-400 uppercase tracking-widest font-bold">Send Money to:</span>
                             <div className="flex items-center gap-2">
-                              <span className="text-sm font-mono text-white font-bold">{paymentNumbers[paymentMethod]}</span>
+                              <span className="text-sm font-mono text-slate-900 font-bold">{paymentNumbers[paymentMethod]}</span>
                               <button 
                                 onClick={() => copyToClipboard(paymentNumbers[paymentMethod])}
-                                className="p-1.5 bg-white/5 hover:bg-white/10 rounded-lg transition-colors text-red-500"
+                                className="p-1.5 bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors text-red-600"
                                 title="Copy Number"
                               >
                                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -228,21 +228,21 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                             </div>
                           </div>
                           <div className="space-y-2">
-                            <label className="text-[10px] text-white/40 uppercase tracking-widest font-bold block">Transaction ID</label>
+                            <label className="text-[10px] text-slate-400 uppercase tracking-widest font-bold block">Transaction ID</label>
                             <input
                               type="text"
                               value={transactionId}
                               onChange={(e) => setTransactionId(e.target.value)}
                               placeholder="Enter TrxID after payment"
-                              className="w-full bg-black/40 border border-white/10 rounded-xl py-3 px-4 text-sm focus:outline-none focus:border-red-600 transition-all text-white font-mono"
+                              className="w-full bg-slate-50 border border-black/10 rounded-xl py-3 px-4 text-sm focus:outline-none focus:border-red-600 transition-all text-slate-900 font-mono"
                             />
                           </div>
                         </motion.div>
                       )}
 
-                      <div className="glass p-4 rounded-2xl border border-white/5 text-center space-y-2">
-                        <h3 className="text-sm font-bold text-white">Manual Payment</h3>
-                        <p className="text-white/40 text-[10px] leading-relaxed">
+                      <div className="glass p-4 rounded-2xl border border-black/5 text-center space-y-2">
+                        <h3 className="text-sm font-bold text-slate-900">Manual Payment</h3>
+                        <p className="text-slate-500 text-[10px] leading-relaxed">
                           Please send the total amount to the number above and provide the Transaction ID. Our team will verify and process your order manually.
                         </p>
                       </div>
@@ -252,15 +252,15 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
               </AnimatePresence>
             </div>
 
-            {cart.length > 0 && !showSuccess && (
-              <div className="p-6 bg-red-950/20 border-t border-white/5 space-y-4">
+             {cart.length > 0 && !showSuccess && (
+              <div className="p-6 bg-red-600/5 border-t border-black/5 space-y-4">
                 <div className="flex justify-between items-center text-sm">
-                  <span className="text-white/60">Cart Value ({cart.length} items)</span>
-                  <span className="font-bold text-white">৳{total.toFixed(0)}</span>
+                  <span className="text-slate-500">Cart Value ({cart.length} items)</span>
+                  <span className="font-bold text-slate-900">৳{total.toFixed(0)}</span>
                 </div>
                 <div className="flex justify-between items-center text-lg">
-                  <span className="font-display font-bold text-white">Payable Total</span>
-                  <span className="font-display font-bold text-red-500 shadow-sm shadow-red-500/20">৳{total.toFixed(0)}</span>
+                  <span className="font-display font-bold text-slate-900">Payable Total</span>
+                  <span className="font-display font-bold text-red-600 shadow-sm shadow-red-600/20">৳{total.toFixed(0)}</span>
                 </div>
                 
                 {!showPayment ? (
@@ -277,10 +277,10 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                   <button 
                     disabled={isProcessing}
                     onClick={handleCheckout}
-                    className={`w-full py-4 rounded-2xl font-bold transition-all flex items-center justify-center space-x-2 ${isProcessing ? 'bg-white/5 text-white/20 cursor-not-allowed border border-white/5' : 'bg-red-600 hover:bg-red-700 text-white shadow-xl shadow-red-600/20'}`}
+                    className={`w-full py-4 rounded-2xl font-bold transition-all flex items-center justify-center space-x-2 ${isProcessing ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-black/5' : 'bg-red-600 hover:bg-red-700 text-white shadow-xl shadow-red-600/20'}`}
                   >
                     {isProcessing ? (
-                      <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
+                      <svg className="animate-spin h-5 w-5 text-slate-400" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
@@ -295,7 +295,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                   </button>
                 )}
 
-                <div className="flex justify-center items-center gap-2 text-[9px] text-white/30 uppercase tracking-widest font-bold">
+                <div className="flex justify-center items-center gap-2 text-[9px] text-slate-400 uppercase tracking-widest font-bold">
                   <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
                   Encrypted Protocol Active
                 </div>

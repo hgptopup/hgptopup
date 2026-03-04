@@ -40,8 +40,6 @@ export interface CartItem {
   loginMethod?: string;
   password?: string;
   whatsapp?: string;
-  vaultGmail?: string;
-  vaultNumber?: string;
   image: string;
 }
 
@@ -59,4 +57,13 @@ export interface Order {
 export interface NavLink {
   label: string;
   path: string;
+}
+
+export interface FloatingIcon {
+  id: string;
+  icon: string;
+  label?: string;
+  delay?: number;
+  duration?: number;
+  position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'center-left' | 'center-right';
 }

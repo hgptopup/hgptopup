@@ -1,28 +1,72 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --color-neon-purple: #8B5CF6;
+  --color-neon-blue: #00F5FF;
+  --color-neon-red: #FF0000;
+  --color-dark-bg: #0B0B0F;
 }
 
-.glass {
-  background: rgba(255, 255, 255, 0.02);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+@layer base {
+  body {
+    @apply bg-white text-slate-900 selection:bg-red-600/10 selection:text-red-600;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
 }
 
-.glass-dark {
-  background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.03);
+@layer components {
+  .neon-border-purple {
+    @apply border border-red-600/10 shadow-[0_0_15px_rgba(220,38,38,0.05)] hover:shadow-[0_0_25px_rgba(220,38,38,0.1)] transition-all duration-300;
+  }
+
+  .neon-border-blue {
+    @apply border border-red-600/10 shadow-[0_0_15px_rgba(220,38,38,0.05)] hover:shadow-[0_0_25px_rgba(220,38,38,0.1)] transition-all duration-300;
+  }
+
+  .neon-text-purple {
+    @apply text-red-600 drop-shadow-[0_0_8px_rgba(220,38,38,0.2)];
+  }
+
+  .neon-text-blue {
+    @apply text-red-600 drop-shadow-[0_0_8px_rgba(220,38,38,0.2)];
+  }
+
+  .neon-text-red {
+    @apply text-red-600 drop-shadow-[0_0_8px_rgba(220,38,38,0.2)];
+  }
+
+  .glass-panel {
+    @apply bg-white border border-slate-200 rounded-2xl;
+  }
+
+  .gaming-grid {
+    background-image: 
+      linear-gradient(to right, rgba(220, 38, 38, 0.02) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(220, 38, 38, 0.02) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
 }
 
-.neon-glow {
-  box-shadow: 0 0 20px rgba(220, 38, 38, 0.4);
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
 }
 
-.neon-glow-red {
-  box-shadow: 0 0 15px rgba(220, 38, 38, 0.5);
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-slate-50;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-200 rounded-full hover:bg-slate-300 transition-colors;
 }

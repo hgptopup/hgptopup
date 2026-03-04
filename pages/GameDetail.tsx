@@ -12,12 +12,14 @@ interface GameDetailProps {
 }
 
 const LOGIN_METHODS = [
-  { id: 'uid', label: 'UID', fieldLabel: 'Player UID', hasPassword: false, hasWhatsapp: false, hasVault: false, type: 'text' },
-  { id: 'vault', label: 'Vault System', fieldLabel: 'Game Email/ID', hasPassword: true, hasWhatsapp: true, hasVault: true, type: 'email' },
-  { id: 'konami', label: 'Konami Mail', fieldLabel: 'Konami Email', hasPassword: true, hasWhatsapp: true, hasVault: false, type: 'email' },
-  { id: 'supercell', label: 'Supercell mail', fieldLabel: 'Supercell Email', hasPassword: false, hasWhatsapp: true, hasVault: false, type: 'email' },
-  { id: 'facebook', label: 'Facebook Login', fieldLabel: 'Facebook Email/Phone', hasPassword: true, hasWhatsapp: false, hasVault: false, type: 'text' },
-  { id: 'gmail', label: 'Gmail Login', fieldLabel: 'Gmail Address', hasPassword: true, hasWhatsapp: false, hasVault: false, type: 'email' }
+  { id: 'uid', label: 'UID', fieldLabel: 'Player UID', hasPassword: false, hasWhatsapp: false, type: 'text' },
+  { id: 'konami', label: 'Konami Mail', fieldLabel: 'Konami Email', hasPassword: true, hasWhatsapp: true, type: 'email' },
+  { id: 'supercell', label: 'Supercell mail', fieldLabel: 'Supercell Email', hasPassword: false, hasWhatsapp: true, type: 'email' },
+  { id: 'facebook', label: 'Facebook Login', fieldLabel: 'Facebook Email/Phone', hasPassword: true, hasWhatsapp: true, type: 'text' },
+  { id: 'gmail', label: 'Gmail Login', fieldLabel: 'Gmail Address', hasPassword: true, hasWhatsapp: true, type: 'email' },
+  { id: 'twitter', label: 'Twitter Login', fieldLabel: 'Twitter Username/Email', hasPassword: true, hasWhatsapp: true, type: 'text' },
+  { id: 'vk', label: 'VK Login', fieldLabel: 'VK Email/Phone', hasPassword: true, hasWhatsapp: true, type: 'text' },
+  { id: 'username', label: 'Username Login', fieldLabel: 'Username', hasPassword: true, hasWhatsapp: true, type: 'text' }
 ];
 
 const GameDetail: React.FC<GameDetailProps> = ({ game, onBack, onOpenAuth }) => {
@@ -26,8 +28,6 @@ const GameDetail: React.FC<GameDetailProps> = ({ game, onBack, onOpenAuth }) => 
   const [accountIdentifier, setAccountIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
-  const [vaultGmail, setVaultGmail] = useState('');
-  const [vaultNumber, setVaultNumber] = useState('');
   
   // Validation State
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -79,15 +79,6 @@ const GameDetail: React.FC<GameDetailProps> = ({ game, onBack, onOpenAuth }) => 
       newErrors.whatsapp = "Enter valid digits (10-15).";
     }
 
-    if (currentMethod.hasVault) {
-        if (!validateEmail(vaultGmail)) {
-            newErrors.vaultGmail = "Invalid gmail format.";
-        }
-        if (!vaultNumber || !/^\d+$/.test(vaultNumber)) {
-            newErrors.vaultNumber = "Digits only required.";
-        }
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -116,8 +107,6 @@ const GameDetail: React.FC<GameDetailProps> = ({ game, onBack, onOpenAuth }) => 
       loginMethod: currentMethod.label,
       password: currentMethod.hasPassword ? password : undefined,
       whatsapp: currentMethod.hasWhatsapp ? whatsapp : undefined,
-      vaultGmail: currentMethod.hasVault ? vaultGmail : undefined,
-      vaultNumber: currentMethod.hasVault ? vaultNumber : undefined,
       image: game.image
     };
   };
@@ -184,9 +173,9 @@ const GameDetail: React.FC<GameDetailProps> = ({ game, onBack, onOpenAuth }) => 
   };
 
   return (
-    <div className="min-h-screen pt-24 pb-20">
+    <div className="min-h-screen pt-24 pb-20 bg-slate-50">
       <div className="max-w-6xl mx-auto px-6">
-        <button onClick={onBack} className="flex items-center space-x-2 text-white/60 hover:text-red-500 mb-8 transition-colors group">
+        <button onClick={onBack} className="flex items-center space-x-2 text-slate-500 hover:text-red-600 mb-8 transition-colors group">
           <svg className="w-5 h-5 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
@@ -199,16 +188,16 @@ const GameDetail: React.FC<GameDetailProps> = ({ game, onBack, onOpenAuth }) => 
             <motion.div 
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="rounded-3xl overflow-hidden glass border border-white/10 sticky top-32"
+              className="bg-white rounded-lg overflow-hidden border-2 border-red-600 shadow-[0_0_15px_rgba(220,38,38,0.3)] sticky top-32"
             >
               <div className="relative aspect-[4/5]">
                 <img src={game.image} className="w-full h-full object-cover" alt={game.title} />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
               </div>
               <div className="p-6">
-                <h1 className="text-3xl font-display font-bold mb-2">{game.title}</h1>
-                <p className="text-red-500 text-[10px] font-bold uppercase tracking-widest mb-4">{game.category}</p>
-                <p className="text-white/40 text-sm leading-relaxed line-clamp-3">
+                <h1 className="text-3xl font-display font-bold mb-2 text-slate-900">{game.title}</h1>
+                <p className="text-red-600 text-[10px] font-bold uppercase tracking-widest mb-4">{game.category}</p>
+                <p className="text-slate-500 text-sm leading-relaxed line-clamp-3">
                   {game.description}
                 </p>
               </div>
@@ -217,15 +206,15 @@ const GameDetail: React.FC<GameDetailProps> = ({ game, onBack, onOpenAuth }) => 
 
           {/* Form Area */}
           <div className="md:col-span-2 space-y-8">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass p-8 rounded-3xl border border-white/5">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-6 sm:p-8 rounded-lg border-2 border-red-600 shadow-[0_0_15px_rgba(220,38,38,0.3)]">
               <div className="flex items-center gap-4 mb-8">
-                <div className="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center font-display font-bold text-lg shadow-lg shadow-red-600/20">1</div>
-                <h2 className="text-xl font-bold">Verification Intel</h2>
+                <div className="w-10 h-10 bg-red-600 text-white rounded-xl flex items-center justify-center font-display font-bold text-lg shadow-lg shadow-red-600/20">1</div>
+                <h2 className="text-xl font-bold text-slate-900">Verification Intel</h2>
               </div>
               
               <div className="space-y-6">
                 <div>
-                  <label className="block text-[10px] font-bold text-white/40 uppercase tracking-[0.2em] mb-3 ml-1">Login Method</label>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-3 ml-1">Login Method</label>
                   <select 
                     value={loginMethod}
                     onChange={(e) => {
@@ -233,11 +222,9 @@ const GameDetail: React.FC<GameDetailProps> = ({ game, onBack, onOpenAuth }) => 
                         setAccountIdentifier('');
                         setPassword('');
                         setWhatsapp('');
-                        setVaultGmail('');
-                        setVaultNumber('');
                         setErrors({});
                     }}
-                    className="w-full bg-neutral-900 border border-white/10 rounded-2xl py-4 px-5 text-sm font-bold focus:outline-none focus:border-red-600 transition-all text-white cursor-pointer"
+                    className="w-full bg-white border border-black/10 rounded-2xl py-4 px-5 text-sm font-bold focus:outline-none focus:border-red-600 transition-all text-slate-900 cursor-pointer"
                   >
                     {LOGIN_METHODS.map((method) => (
                       <option key={method.id} value={method.id}>{method.label}</option>
@@ -247,7 +234,7 @@ const GameDetail: React.FC<GameDetailProps> = ({ game, onBack, onOpenAuth }) => 
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div>
-                    <label className={`block text-[10px] font-bold uppercase tracking-[0.2em] mb-3 ml-1 transition-colors ${errors.identifier ? 'text-red-500' : 'text-white/40'}`}>
+                    <label className={`block text-[10px] font-bold uppercase tracking-[0.2em] mb-3 ml-1 transition-colors ${errors.identifier ? 'text-red-600' : 'text-slate-400'}`}>
                       {currentMethod.fieldLabel}
                     </label>
                     <input 
@@ -255,84 +242,53 @@ const GameDetail: React.FC<GameDetailProps> = ({ game, onBack, onOpenAuth }) => 
                       placeholder={`Enter ${currentMethod.fieldLabel.toLowerCase()}...`}
                       value={accountIdentifier}
                       onChange={(e) => handleInputChange('identifier', e.target.value, setAccountIdentifier)}
-                      className={`w-full bg-white/5 border rounded-2xl py-4 px-5 text-sm font-medium focus:outline-none transition-all text-white ${errors.identifier ? 'border-red-500 bg-red-500/5' : 'border-white/10 focus:border-red-600'}`}
+                      className={`w-full bg-slate-50 border rounded-2xl py-4 px-5 text-sm font-medium focus:outline-none transition-all text-slate-900 ${errors.identifier ? 'border-red-600 bg-red-600/5' : 'border-black/10 focus:border-red-600'}`}
                     />
                     {errors.identifier && (
-                      <p className="text-[10px] text-red-500 font-bold mt-2 ml-1 uppercase tracking-wider">{errors.identifier}</p>
+                      <p className="text-[10px] text-red-600 font-bold mt-2 ml-1 uppercase tracking-wider">{errors.identifier}</p>
                     )}
                   </div>
                   
                   {currentMethod.hasPassword && (
                     <div>
-                      <label className={`block text-[10px] font-bold uppercase tracking-[0.2em] mb-3 ml-1 transition-colors ${errors.password ? 'text-red-500' : 'text-white/40'}`}>Password</label>
+                      <label className={`block text-[10px] font-bold uppercase tracking-[0.2em] mb-3 ml-1 transition-colors ${errors.password ? 'text-red-600' : 'text-slate-400'}`}>Password</label>
                       <input 
                         type="password" 
                         placeholder="••••••••"
                         value={password}
                         onChange={(e) => handleInputChange('password', e.target.value, setPassword)}
-                        className={`w-full bg-white/5 border rounded-2xl py-4 px-5 text-sm font-medium focus:outline-none transition-all text-white ${errors.password ? 'border-red-500 bg-red-500/5' : 'border-white/10 focus:border-red-600'}`}
+                        className={`w-full bg-slate-50 border rounded-2xl py-4 px-5 text-sm font-medium focus:outline-none transition-all text-slate-900 ${errors.password ? 'border-red-600 bg-red-600/5' : 'border-black/10 focus:border-red-600'}`}
                       />
                       {errors.password && (
-                        <p className="text-[10px] text-red-500 font-bold mt-2 ml-1 uppercase tracking-wider">{errors.password}</p>
+                        <p className="text-[10px] text-red-600 font-bold mt-2 ml-1 uppercase tracking-wider">{errors.password}</p>
                       )}
                     </div>
                   )}
 
                   {currentMethod.hasWhatsapp && (
                     <div>
-                      <label className={`block text-[10px] font-bold uppercase tracking-[0.2em] mb-3 ml-1 transition-colors ${errors.whatsapp ? 'text-red-500' : 'text-white/40'}`}>WhatsApp No</label>
+                      <label className={`block text-[10px] font-bold uppercase tracking-[0.2em] mb-3 ml-1 transition-colors ${errors.whatsapp ? 'text-red-600' : 'text-slate-400'}`}>WhatsApp No</label>
                       <input 
                         type="tel" 
                         placeholder="01XXXXXXXXX"
                         value={whatsapp}
                         onChange={(e) => handleInputChange('whatsapp', e.target.value, setWhatsapp)}
-                        className={`w-full bg-white/5 border rounded-2xl py-4 px-5 text-sm font-medium focus:outline-none transition-all text-white ${errors.whatsapp ? 'border-red-500 bg-red-500/5' : 'border-white/10 focus:border-red-600'}`}
+                        className={`w-full bg-slate-50 border rounded-2xl py-4 px-5 text-sm font-medium focus:outline-none transition-all text-slate-900 ${errors.whatsapp ? 'border-red-600 bg-red-600/5' : 'border-black/10 focus:border-red-600'}`}
                       />
                       {errors.whatsapp && (
-                        <p className="text-[10px] text-red-500 font-bold mt-2 ml-1 uppercase tracking-wider">{errors.whatsapp}</p>
+                        <p className="text-[10px] text-red-600 font-bold mt-2 ml-1 uppercase tracking-wider">{errors.whatsapp}</p>
                       )}
                     </div>
-                  )}
-
-                  {currentMethod.hasVault && (
-                    <>
-                      <div>
-                        <label className={`block text-[10px] font-bold uppercase tracking-[0.2em] mb-3 ml-1 transition-colors ${errors.vaultGmail ? 'text-red-500' : 'text-white/40'}`}>Vault Gmail</label>
-                        <input 
-                          type="email" 
-                          placeholder="vault@gmail.com"
-                          value={vaultGmail}
-                          onChange={(e) => handleInputChange('vaultGmail', e.target.value, setVaultGmail)}
-                          className={`w-full bg-white/5 border rounded-2xl py-4 px-5 text-sm font-medium focus:outline-none transition-all text-white ${errors.vaultGmail ? 'border-red-500 bg-red-500/5' : 'border-white/10 focus:border-red-600'}`}
-                        />
-                        {errors.vaultGmail && (
-                          <p className="text-[10px] text-red-500 font-bold mt-2 ml-1 uppercase tracking-wider">{errors.vaultGmail}</p>
-                        )}
-                      </div>
-                      <div>
-                        <label className={`block text-[10px] font-bold uppercase tracking-[0.2em] mb-3 ml-1 transition-colors ${errors.vaultNumber ? 'text-red-500' : 'text-white/40'}`}>Vault Number</label>
-                        <input 
-                          type="text" 
-                          placeholder="Vault Code"
-                          value={vaultNumber}
-                          onChange={(e) => handleInputChange('vaultNumber', e.target.value, setVaultNumber)}
-                          className={`w-full bg-white/5 border rounded-2xl py-4 px-5 text-sm font-medium focus:outline-none transition-all text-white ${errors.vaultNumber ? 'border-red-500 bg-red-500/5' : 'border-white/10 focus:border-red-600'}`}
-                        />
-                        {errors.vaultNumber && (
-                          <p className="text-[10px] text-red-500 font-bold mt-2 ml-1 uppercase tracking-wider">{errors.vaultNumber}</p>
-                        )}
-                      </div>
-                    </>
                   )}
                 </div>
               </div>
             </motion.div>
 
             {/* Step 2: Select Package */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass p-8 rounded-3xl border border-white/5">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-6 sm:p-8 rounded-lg border-2 border-red-600 shadow-[0_0_15px_rgba(220,38,38,0.3)]">
               <div className="flex items-center gap-4 mb-8">
-                <div className="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center font-display font-bold text-lg shadow-lg shadow-red-600/20">2</div>
-                <h2 className="text-xl font-bold">Select Package</h2>
+                <div className="w-10 h-10 bg-red-600 text-white rounded-xl flex items-center justify-center font-display font-bold text-lg shadow-lg shadow-red-600/20">2</div>
+                <h2 className="text-xl font-bold text-slate-900">Select Package</h2>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 {game.packages.map((pkg) => (
@@ -348,21 +304,21 @@ const GameDetail: React.FC<GameDetailProps> = ({ game, onBack, onOpenAuth }) => 
                         });
                       }
                     }}
-                    className={`p-5 rounded-2xl border transition-all text-left ${selectedPackage?.id === pkg.id ? 'bg-red-600/10 border-red-500' : 'bg-white/5 border-white/5 hover:border-white/10'}`}
+                    className={`p-5 rounded-2xl border transition-all text-left ${selectedPackage?.id === pkg.id ? 'bg-red-600/10 border-red-600' : 'bg-slate-50 border-black/5 hover:border-black/10'}`}
                   >
-                    <div className="text-xl font-display font-bold mb-1">{pkg.amount}</div>
-                    <div className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-4">{pkg.unit}</div>
-                    <div className="text-sm font-bold text-red-500">৳{pkg.price.toFixed(0)}</div>
+                    <div className="text-xl font-display font-bold mb-1 text-slate-900">{pkg.amount}</div>
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">{pkg.unit}</div>
+                    <div className="text-sm font-bold text-red-600">৳{pkg.price.toFixed(0)}</div>
                   </button>
                 ))}
               </div>
               {errors.package && (
-                <p className="text-[10px] text-red-500 font-bold mt-4 text-center uppercase tracking-widest">{errors.package}</p>
+                <p className="text-[10px] text-red-600 font-bold mt-4 text-center uppercase tracking-widest">{errors.package}</p>
               )}
             </motion.div>
 
             {/* Checkout Area */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass p-8 rounded-3xl border border-red-500/10">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-6 sm:p-8 rounded-lg border-2 border-red-600 shadow-[0_0_15px_rgba(220,38,38,0.3)]">
               <AnimatePresence mode="wait">
                 {showSuccess ? (
                   <motion.div 
@@ -372,19 +328,19 @@ const GameDetail: React.FC<GameDetailProps> = ({ game, onBack, onOpenAuth }) => 
                     className="flex flex-col items-center justify-center text-center py-10"
                   >
                     <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mb-6 border border-green-500/30">
-                      <svg className="w-10 h-10 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                       </svg>
                     </div>
-                    <h3 className="text-2xl font-display font-bold mb-2 text-white">Order Successful</h3>
-                    <p className="text-white/40 text-sm mb-8 px-6 font-medium leading-relaxed">
+                    <h3 className="text-2xl font-display font-bold mb-2 text-slate-900">Order Successful</h3>
+                    <p className="text-slate-500 text-sm mb-8 px-6 font-medium leading-relaxed">
                       We have received your payment intel. Deployment usually starts within 5-30 minutes. You can track this in your profile history.
                     </p>
                     <button onClick={onBack} className="w-full py-4 bg-green-600 hover:bg-green-700 text-white font-bold rounded-2xl transition-all shadow-xl shadow-green-600/20 uppercase tracking-widest text-xs">Return to Arena</button>
                   </motion.div>
                 ) : !showPayment ? (
                   <div className="flex flex-col sm:flex-row gap-4">
-                    <button onClick={handleAddToCart} className="flex-1 py-4 bg-white/5 border border-white/10 rounded-2xl font-bold hover:bg-white/10 text-white transition-all uppercase tracking-widest text-xs">Add to Cart</button>
+                    <button onClick={handleAddToCart} className="flex-1 py-4 bg-slate-50 border border-black/10 rounded-2xl font-bold hover:bg-slate-100 text-slate-900 transition-all uppercase tracking-widest text-xs">Add to Cart</button>
                     <button onClick={handleBuyNow} className="flex-1 py-4 bg-red-600 rounded-2xl font-bold hover:bg-red-700 text-white shadow-xl shadow-red-600/20 transition-all uppercase tracking-widest text-xs">Buy Now</button>
                   </div>
                 ) : (
@@ -392,7 +348,7 @@ const GameDetail: React.FC<GameDetailProps> = ({ game, onBack, onOpenAuth }) => 
                     <div className="text-center space-y-4">
                       <button 
                         onClick={() => setShowPayment(false)}
-                        className="text-xs font-bold text-red-500 uppercase tracking-widest flex items-center gap-2 hover:text-red-400 transition-colors mb-4"
+                        className="text-xs font-bold text-red-600 uppercase tracking-widest flex items-center gap-2 hover:text-red-700 transition-colors mb-4"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
@@ -408,7 +364,7 @@ const GameDetail: React.FC<GameDetailProps> = ({ game, onBack, onOpenAuth }) => 
                             className={`p-3 rounded-xl border transition-all text-xs font-bold ${
                               paymentMethod === method 
                                 ? 'bg-red-600 border-red-600 text-white' 
-                                : 'bg-white/5 border-white/10 text-white/60 hover:border-white/20'
+                                : 'bg-slate-50 border-black/10 text-slate-500 hover:border-black/20'
                             }`}
                           >
                             {method}
@@ -420,39 +376,39 @@ const GameDetail: React.FC<GameDetailProps> = ({ game, onBack, onOpenAuth }) => 
                         <motion.div 
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
-                          className="glass p-6 rounded-2xl border border-white/10 space-y-4 text-left"
+                          className="glass p-6 rounded-2xl border border-black/10 space-y-4 text-left"
                         >
                           <div className="flex justify-between items-center">
-                            <span className="text-xs text-white/40 uppercase tracking-widest font-bold">Send Money to:</span>
+                            <span className="text-xs text-slate-400 uppercase tracking-widest font-bold">Send Money to:</span>
                             <div className="flex items-center gap-2">
-                              <span className="text-sm font-mono text-white font-bold">{paymentNumbers[paymentMethod]}</span>
+                              <span className="text-sm font-mono text-slate-900 font-bold">{paymentNumbers[paymentMethod]}</span>
                               <button 
                                 onClick={() => copyToClipboard(paymentNumbers[paymentMethod])}
-                                className="p-1.5 bg-white/5 hover:bg-white/10 rounded-lg transition-colors text-red-500"
+                                className="p-1.5 bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors text-red-600"
                                 title="Copy Number"
                               >
                                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
                                 </svg>
                               </button>
                             </div>
                           </div>
                           <div className="space-y-2">
-                            <label className="text-[10px] text-white/40 uppercase tracking-widest font-bold block">Transaction ID</label>
+                            <label className="text-[10px] text-slate-400 uppercase tracking-widest font-bold block">Transaction ID</label>
                             <input
                               type="text"
                               value={transactionId}
                               onChange={(e) => setTransactionId(e.target.value)}
                               placeholder="Enter TrxID after payment"
-                              className="w-full bg-black/40 border border-white/10 rounded-xl py-4 px-5 text-sm focus:outline-none focus:border-red-600 transition-all text-white font-mono"
+                              className="w-full bg-slate-50 border border-black/10 rounded-xl py-4 px-5 text-sm focus:outline-none focus:border-red-600 transition-all text-slate-900 font-mono"
                             />
                           </div>
                         </motion.div>
                       )}
 
-                      <div className="glass p-6 rounded-2xl border border-white/5 text-center space-y-2">
-                        <h3 className="text-lg font-bold text-white">Manual Verification</h3>
-                        <p className="text-white/40 text-xs leading-relaxed">
+                      <div className="glass p-6 rounded-2xl border border-black/5 text-center space-y-2">
+                        <h3 className="text-lg font-bold text-slate-900">Manual Verification</h3>
+                        <p className="text-slate-500 text-xs leading-relaxed">
                           Please send ৳{selectedPackage?.price} to the number above and provide the Transaction ID.
                         </p>
                       </div>

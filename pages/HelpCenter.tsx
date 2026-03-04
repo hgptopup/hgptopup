@@ -76,11 +76,11 @@ const HelpCenter: React.FC<HelpCenterProps> = ({ onBack, onOpenSupport }) => {
   ];
 
   return (
-    <div className="min-h-screen pt-24 pb-20">
+    <div className="min-h-screen pt-24 pb-20 bg-[#0B0B0F]">
       <div className="max-w-5xl mx-auto px-6">
         <button 
           onClick={onBack} 
-          className="flex items-center space-x-2 text-white/60 hover:text-red-500 mb-8 transition-colors group"
+          className="flex items-center space-x-2 text-slate-400 hover:text-white mb-8 transition-colors group"
         >
           <svg className="w-5 h-5 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -93,10 +93,10 @@ const HelpCenter: React.FC<HelpCenterProps> = ({ onBack, onOpenSupport }) => {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-16"
         >
-          <h1 className="text-4xl md:text-6xl font-display font-bold mb-4">
-            Help <span className="text-red-600">Center</span>
+          <h1 className="text-4xl md:text-6xl font-display font-bold mb-4 text-white">
+            Help <span className="neon-text-red">Center</span>
           </h1>
-          <p className="text-white/40 max-w-2xl mx-auto font-medium">
+          <p className="text-slate-400 max-w-2xl mx-auto font-medium">
             Everything you need to know about the Hasibul Game Point protocols. If you can't find your answer here, our elite support team is ready to assist.
           </p>
         </motion.div>
@@ -108,10 +108,10 @@ const HelpCenter: React.FC<HelpCenterProps> = ({ onBack, onOpenSupport }) => {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: idx * 0.1 }}
-              className="glass p-8 rounded-[2.5rem] border border-white/5 hover:border-red-500/20 transition-all shadow-xl"
+              className="bg-white/5 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/10 hover:border-red-600/20 transition-all shadow-xl"
             >
               <div className="flex items-center gap-4 mb-8">
-                <div className="text-3xl bg-red-600/10 w-14 h-14 rounded-2xl flex items-center justify-center border border-red-500/20 shadow-lg neon-glow-red">
+                <div className="text-3xl bg-red-600/10 w-14 h-14 rounded-2xl flex items-center justify-center border border-red-600/20 shadow-[0_0_20px_rgba(220,38,38,0.3)]">
                   {category.icon}
                 </div>
                 <h2 className="text-2xl font-display font-bold text-white">{category.title}</h2>
@@ -120,10 +120,10 @@ const HelpCenter: React.FC<HelpCenterProps> = ({ onBack, onOpenSupport }) => {
               <div className="space-y-6">
                 {category.questions.map((faq, fIdx) => (
                   <div key={fIdx} className="group">
-                    <h4 className="text-red-500 font-bold text-sm mb-2 group-hover:text-red-400 transition-colors">
+                    <h4 className="text-red-600 font-bold text-sm mb-2 group-hover:text-red-500 transition-colors">
                       Q: {faq.q}
                     </h4>
-                    <p className="text-white/50 text-xs leading-relaxed font-medium">
+                    <p className="text-slate-400 text-xs leading-relaxed font-medium">
                       A: {faq.a}
                     </p>
                   </div>
@@ -136,11 +136,11 @@ const HelpCenter: React.FC<HelpCenterProps> = ({ onBack, onOpenSupport }) => {
         <motion.div 
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
-          className="mt-20 p-10 glass rounded-[3rem] border border-red-500/10 text-center relative overflow-hidden"
+          className="mt-20 p-10 bg-white/5 backdrop-blur-xl rounded-[3rem] border border-red-600/10 text-center relative overflow-hidden"
         >
           <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-red-600/5 to-transparent pointer-events-none"></div>
-          <h3 className="text-2xl font-display font-bold mb-4">Still need assistance?</h3>
-          <p className="text-white/40 mb-8 max-w-md mx-auto">Our human operators are online daily from 10:00 AM – 12:00 AM to solve your tactical issues.</p>
+          <h3 className="text-2xl font-display font-bold mb-4 text-white">Still need assistance?</h3>
+          <p className="text-slate-400 mb-8 max-w-md mx-auto">Our human operators are online daily from 10:00 AM – 12:00 AM to solve your tactical issues.</p>
           <button 
              onClick={onOpenSupport}
              className="px-8 py-4 bg-red-600 hover:bg-red-700 text-white font-bold rounded-2xl transition-all shadow-xl shadow-red-600/20 uppercase tracking-widest text-xs"

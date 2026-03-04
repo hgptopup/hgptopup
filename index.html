@@ -7,11 +7,18 @@
     <title>Hasibul Game Point</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-      body {
+      html, body {
         font-family: 'Plus Jakarta Sans', sans-serif;
-        background-color: #000000; /* True Black */
-        color: #f8fafc;
+        background-color: #ffffff; /* White */
+        color: #0f172a;
         overflow-x: hidden;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+      }
+      #root {
+        overflow-x: hidden;
+        width: 100%;
       }
       .font-display {
         font-family: 'Space Grotesk', sans-serif;
@@ -59,19 +66,7 @@
         background: #4a0000;
       }
     </style>
-  <script type="importmap">
-{
-  "imports": {
-    "react": "https://esm.sh/react@^19.2.4",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
-    "react/": "https://esm.sh/react@^19.2.4/",
-    "@google/genai": "https://esm.sh/@google/genai@^1.41.0",
-    "zustand": "https://esm.sh/zustand@^5.0.11",
-    "framer-motion": "https://esm.sh/framer-motion@^12.34.0",
-    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.45.4"
-  }
-}
-</script>
+
 </head>
   <body>
     <div id="root"></div>

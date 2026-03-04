@@ -7,13 +7,13 @@ const SplashScreen: React.FC = () => {
       initial={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.8, ease: "easeInOut" }}
-      className="fixed inset-0 z-[9999] bg-black flex items-center justify-center overflow-hidden"
+      className="fixed inset-0 z-[9999] bg-white flex items-center justify-center overflow-hidden"
     >
       {/* Background Glow */}
       <div 
         className="absolute inset-0 opacity-50" 
         style={{ 
-          background: 'radial-gradient(circle at center, rgba(220, 38, 38, 0.1) 0%, transparent 80%)' 
+          background: 'radial-gradient(circle at center, rgba(220, 38, 38, 0.05) 0%, transparent 80%)' 
         }} 
       />
 
@@ -29,7 +29,7 @@ const SplashScreen: React.FC = () => {
             }}
             animate={{ 
               opacity: [0, 0.3, 0],
-              y: [null, "-=100"]
+              y: [0, -100]
             }}
             transition={{ 
               duration: Math.random() * 5 + 5,
@@ -54,9 +54,9 @@ const SplashScreen: React.FC = () => {
           }}
           className="mb-8"
         >
-          <div className="w-24 h-24 bg-red-600 rounded-3xl flex items-center justify-center shadow-2xl shadow-red-600/40 relative group">
+          <div className="w-24 h-24 bg-red-600 rounded-3xl flex items-center justify-center shadow-[0_0_30px_rgba(220,38,38,0.2)] relative group">
             <span className="text-4xl font-display font-black text-white italic tracking-tighter">HGP</span>
-            <div className="absolute inset-0 rounded-3xl border-2 border-white/20 animate-ping opacity-20" />
+            <div className="absolute inset-0 rounded-3xl border-2 border-red-600/20 animate-ping opacity-20" />
           </div>
         </motion.div>
 
@@ -76,7 +76,7 @@ const SplashScreen: React.FC = () => {
                 ease: [0.16, 1, 0.3, 1],
                 delay: 0.3
               }}
-              className="text-2xl md:text-4xl font-display font-black text-white uppercase tracking-[0.2em] italic leading-none"
+              className="text-2xl md:text-4xl font-display font-black text-slate-900 uppercase tracking-[0.2em] italic leading-none"
             >
               Hasibul
             </motion.h1>
@@ -100,7 +100,7 @@ const SplashScreen: React.FC = () => {
           initial={{ top: "-10%" }}
           animate={{ top: "110%" }}
           transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-          className="absolute left-0 right-0 h-[1px] bg-red-600/20 z-10 pointer-events-none shadow-[0_0_10px_rgba(220,38,38,0.3)]"
+          className="absolute left-0 right-0 h-[1px] bg-red-600/10 z-10 pointer-events-none shadow-[0_0_10px_rgba(220,38,38,0.1)]"
         />
 
         {/* Subtitle / Loading Bar */}
@@ -108,13 +108,13 @@ const SplashScreen: React.FC = () => {
           initial={{ opacity: 0, width: 0 }}
           animate={{ opacity: 1, width: "100%" }}
           transition={{ duration: 0.8, delay: 0.5, ease: "easeInOut" }}
-          className="mt-6 h-[2px] bg-red-600/50 relative overflow-hidden max-w-[200px]"
+          className="mt-6 h-[2px] bg-slate-100 relative overflow-hidden max-w-[200px]"
         >
           <motion.div 
             initial={{ x: "-100%" }}
             animate={{ x: "100%" }}
             transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-            className="absolute inset-0 bg-red-600 shadow-[0_0_15px_rgba(220,38,38,0.8)]"
+            className="absolute inset-0 bg-red-600 shadow-[0_0_15px_rgba(220,38,38,0.4)]"
           />
         </motion.div>
       </div>

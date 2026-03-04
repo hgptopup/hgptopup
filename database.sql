@@ -35,14 +35,32 @@ CREATE TABLE IF NOT EXISTS public.orders (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 4. ENABLE RLS
+-- 4. FLOATING ICONS
+CREATE TABLE IF NOT EXISTS public.hero_floating_icons (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  icon TEXT NOT NULL,
+  label TEXT,
+  delay NUMERIC DEFAULT 0,
+  duration NUMERIC DEFAULT 4,
+  position TEXT DEFAULT 'top-right',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 5. ENABLE RLS
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.games ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.hero_floating_icons ENABLE ROW LEVEL SECURITY;
 
--- 5. POLICIES
+-- 6. POLICIES
 DROP POLICY IF EXISTS "Public view games" ON public.games;
 CREATE POLICY "Public view games" ON public.games FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Public view floating icons" ON public.hero_floating_icons;
+CREATE POLICY "Public view floating icons" ON public.hero_floating_icons FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Admin control floating icons" ON public.hero_floating_icons;
+CREATE POLICY "Admin control floating icons" ON public.hero_floating_icons ALL USING (auth.jwt() ->> 'email' = 'hasibulgamepoint02@gmail.com');
 
 DROP POLICY IF EXISTS "Users insert orders" ON public.orders;
 CREATE POLICY "Users insert orders" ON public.orders FOR INSERT WITH CHECK (true); -- Allow guest/logged-in order insertion
