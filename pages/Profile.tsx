@@ -6,10 +6,11 @@ import { Order } from '../types';
 
 interface ProfileProps {
   onBack: () => void;
+  onOpenAdmin?: () => void;
 }
 
-const Profile: React.FC<ProfileProps> = ({ onBack }) => {
-  const { user, orders, fetchOrders } = useStore();
+const Profile: React.FC<ProfileProps> = ({ onBack, onOpenAdmin }) => {
+  const { user, orders, fetchOrders, logout, isAdmin, justCompletedOrder, setJustCompletedOrder } = useStore();
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -18,6 +19,20 @@ const Profile: React.FC<ProfileProps> = ({ onBack }) => {
     await fetchOrders();
     setIsRefreshing(false);
   };
+
+  const latestOrder = useMemo(() => {
+    if (!orders || orders.length === 0) return null;
+    return [...orders].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+  }, [orders]);
+
+  const isProcessing = latestOrder?.status === 'PENDING' || latestOrder?.status === 'PROCESSING';
+  const isCompleted = latestOrder?.status === 'COMPLETED';
+
+  const avatarAnimationClass = isProcessing 
+    ? 'animate-breathe-red' 
+    : (isCompleted && justCompletedOrder)
+    ? 'animate-breathe-green' 
+    : 'border-red-600/20';
 
   // Calculate total spent (Purchase Balance) based on order history
   const purchaseBalance = useMemo(() => {
@@ -32,7 +47,7 @@ const Profile: React.FC<ProfileProps> = ({ onBack }) => {
   ];
 
   return (
-    <div className="min-h-screen pt-24 pb-20">
+    <div className="min-h-screen pt-24 pb-32 md:pb-20">
       <div className="max-w-6xl mx-auto px-6">
         <div className="flex justify-between items-center mb-8">
           <button 
@@ -63,22 +78,48 @@ const Profile: React.FC<ProfileProps> = ({ onBack }) => {
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="glass p-8 rounded-[2.5rem] border border-black/5 text-center sticky top-32"
+              className="bg-white p-8 rounded-[2.5rem] border border-black/5 text-center sticky top-32 shadow-sm"
             >
               <div className="relative w-32 h-32 mx-auto mb-6">
                 <div className="absolute inset-0 bg-red-600 rounded-full blur-2xl opacity-20 animate-pulse"></div>
                 <img 
                   src={`https://ui-avatars.com/api/?name=${user?.name || 'User'}&background=dc2626&color=fff&size=256`} 
-                  className="w-full h-full rounded-full border-4 border-red-600/20 relative z-10" 
+                  className={`w-full h-full rounded-full border-4 relative z-10 ${avatarAnimationClass}`} 
                   alt="Profile" 
                 />
               </div>
               <h2 className="text-3xl font-display font-bold mb-2 text-slate-900">{user?.name}</h2>
               <p className="text-slate-600 font-medium text-base mb-6">{user?.email}</p>
               
-              <div className="inline-flex px-4 py-1.5 glass rounded-full text-xs font-bold text-red-600 border border-red-600/20 uppercase tracking-[0.2em]">
+              <div className="inline-flex px-4 py-1.5 bg-white rounded-full text-xs font-bold text-red-600 border border-red-600/20 uppercase tracking-[0.2em] shadow-sm mb-6">
                 {user?.role} Access
               </div>
+
+              {isAdmin && onOpenAdmin && (
+                <button
+                  onClick={onOpenAdmin}
+                  className="w-full py-3 mb-3 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-2xl transition-all border border-slate-700 flex items-center justify-center gap-2 uppercase tracking-widest text-xs"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  Admin Panel
+                </button>
+              )}
+
+              <button
+                onClick={async () => {
+                  await logout();
+                  onBack();
+                }}
+                className="w-full py-3 bg-[#FAF9F6] hover:bg-red-50 text-red-600 font-bold rounded-2xl transition-all border border-red-100 flex items-center justify-center gap-2 uppercase tracking-widest text-xs"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                Logout
+              </button>
             </motion.div>
           </div>
 
@@ -92,7 +133,7 @@ const Profile: React.FC<ProfileProps> = ({ onBack }) => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.1 }}
-                  className="glass p-6 rounded-3xl border border-black/5 hover:border-red-600/10 transition-all"
+                  className="bg-white p-6 rounded-3xl border border-black/5 hover:border-red-600/10 transition-all shadow-sm"
                 >
                   <div className="text-3xl mb-4">{stat.icon}</div>
                   <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">{stat.label}</p>
@@ -106,7 +147,7 @@ const Profile: React.FC<ProfileProps> = ({ onBack }) => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="glass p-8 rounded-[2.5rem] border border-black/5 min-h-[400px]"
+              className="bg-white p-8 rounded-[2.5rem] border border-black/5 min-h-[400px] shadow-sm"
             >
               <div className="flex items-center justify-between mb-8">
                 <h3 className="text-xl font-display font-bold flex items-center gap-3 text-slate-900">
@@ -131,10 +172,10 @@ const Profile: React.FC<ProfileProps> = ({ onBack }) => {
                       key={order.id} 
                       whileHover={{ scale: 1.01 }}
                       onClick={() => setSelectedOrder(order)}
-                      className="glass p-5 rounded-2xl border border-black/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 group hover:border-red-600/30 transition-all cursor-pointer"
+                      className="bg-white p-5 rounded-2xl border border-black/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 group hover:border-red-600/30 transition-all cursor-pointer shadow-sm"
                     >
                       <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center font-bold text-red-600 text-xs">
+                        <div className="w-12 h-12 bg-[#FAF9F6] rounded-xl flex items-center justify-center font-bold text-red-600 text-xs">
                           {order.id.slice(-4)}
                         </div>
                         <div>
@@ -153,7 +194,7 @@ const Profile: React.FC<ProfileProps> = ({ onBack }) => {
                             {order.status}
                           </p>
                         </div>
-                        <div className="p-2 bg-slate-50 group-hover:bg-red-600/20 rounded-lg transition-colors">
+                        <div className="p-2 bg-[#FAF9F6] group-hover:bg-red-600/20 rounded-lg transition-colors">
                           <svg className="w-5 h-5 text-slate-300 group-hover:text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                           </svg>
@@ -182,7 +223,7 @@ const Profile: React.FC<ProfileProps> = ({ onBack }) => {
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="glass border border-black/10 rounded-[2.5rem] p-8 max-w-lg w-full relative z-10 shadow-2xl overflow-hidden"
+              className="bg-[#FAF9F6] border border-black/10 rounded-[2.5rem] p-8 max-w-lg w-full relative z-10 shadow-2xl overflow-hidden"
             >
               <div className="absolute top-0 right-0 w-32 h-32 bg-red-600/10 rounded-full blur-3xl -mr-16 -mt-16"></div>
               
@@ -202,21 +243,21 @@ const Profile: React.FC<ProfileProps> = ({ onBack }) => {
               </div>
 
               <div className="space-y-6 relative z-10">
-                <div className="flex justify-between text-sm py-4 border-b border-black/5">
-                  <span className="text-slate-400">Order ID</span>
-                  <span className="font-mono font-bold text-slate-900">{selectedOrder.id}</span>
+                <div className="bg-white p-5 rounded-2xl border border-black/5 flex justify-between items-center shadow-sm">
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Order ID</span>
+                  <span className="font-mono font-bold text-slate-900 bg-black/5 px-3 py-1 rounded-lg">{selectedOrder.id}</span>
                 </div>
 
                 <div className="space-y-4">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Target Items</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-2">Target Items</p>
                   {selectedOrder.items && selectedOrder.items.length > 0 ? (
                     selectedOrder.items.map((item, idx) => (
-                      <div key={idx} className="glass p-4 rounded-2xl border border-black/5 flex items-center gap-4">
+                      <div key={idx} className="bg-white p-4 rounded-2xl border border-black/5 flex items-center gap-4 shadow-sm">
                         <img src={item.image} className="w-12 h-12 rounded-lg object-cover" alt={item.gameTitle} />
                         <div className="flex-1">
                           <p className="text-sm font-bold text-slate-900">{item.gameTitle}</p>
                           <p className="text-xs text-slate-500">{item.packageName}</p>
-                          <p className="text-[10px] text-red-600 font-mono mt-1">{item.playerId}</p>
+                          <p className="text-[10px] text-red-600 font-mono mt-1 bg-red-50 px-2 py-0.5 rounded inline-block">{item.playerId}</p>
                         </div>
                         <div className="text-right">
                           <p className="text-sm font-bold text-slate-900">৳{(Number(item.price) || 0).toFixed(0)}</p>
@@ -224,32 +265,34 @@ const Profile: React.FC<ProfileProps> = ({ onBack }) => {
                       </div>
                     ))
                   ) : (
-                    <p className="text-xs text-slate-300 italic">No item data available for this legacy order.</p>
+                    <div className="bg-white p-4 rounded-2xl border border-black/5 shadow-sm">
+                      <p className="text-xs text-slate-400 italic text-center">No item data available for this legacy order.</p>
+                    </div>
                   )}
                 </div>
 
-                <div className="bg-black/[0.02] p-6 rounded-3xl border border-black/5 space-y-3">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-400">Status</span>
-                    <span className={`font-bold ${selectedOrder.status === 'COMPLETED' ? 'text-green-600' : 'text-red-600'}`}>
+                <div className="bg-white p-6 rounded-3xl border border-black/5 space-y-4 shadow-sm">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Status</span>
+                    <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${selectedOrder.status === 'COMPLETED' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
                       {selectedOrder.status}
                     </span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-400">Date</span>
-                    <span className="text-slate-900">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Date</span>
+                    <span className="text-slate-900 font-medium text-sm bg-black/5 px-3 py-1 rounded-lg">
                       {new Date(selectedOrder.createdAt).toLocaleString()}
                     </span>
                   </div>
-                  <div className="flex justify-between text-lg pt-2 border-t border-black/5">
-                    <span className="font-display font-bold text-slate-900">Total Charged</span>
-                    <span className="font-display font-bold text-red-600">৳{(Number(selectedOrder.totalAmount) || 0).toFixed(0)}</span>
+                  <div className="flex justify-between items-center pt-4 border-t border-black/5">
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Total Charged</span>
+                    <span className="font-display font-bold text-xl text-red-600">৳{(Number(selectedOrder.totalAmount) || 0).toFixed(0)}</span>
                   </div>
                 </div>
 
                 <button
                   onClick={() => setSelectedOrder(null)}
-                  className="w-full py-4 bg-slate-50 hover:bg-slate-100 text-slate-900 font-bold rounded-2xl transition-all border border-black/10"
+                  className="w-full py-4 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-2xl transition-all shadow-md"
                 >
                   Close Intel
                 </button>

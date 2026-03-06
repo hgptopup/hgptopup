@@ -55,6 +55,8 @@ interface AppState {
   addFloatingIcon: (icon: Partial<FloatingIcon>) => Promise<{success: boolean, error?: string}>;
   updateFloatingIcon: (id: string, updates: Partial<FloatingIcon>) => Promise<{success: boolean, error?: string}>;
   deleteFloatingIcon: (id: string) => Promise<boolean>;
+  justCompletedOrder: boolean;
+  setJustCompletedOrder: (val: boolean) => void;
 }
 
 const ADMIN_EMAIL = 'hasibulgamepoint02@gmail.com';
@@ -72,6 +74,8 @@ export const useStore = create<AppState>((set, get) => ({
   cart: [],
   loading: false,
   dbError: null,
+  justCompletedOrder: false,
+  setJustCompletedOrder: (val) => set({ justCompletedOrder: val }),
 
   setSession: async (sessionUser) => {
     if (!sessionUser) {
@@ -106,7 +110,7 @@ export const useStore = create<AppState>((set, get) => ({
   
   logout: async () => {
     await supabase.auth.signOut();
-    set({ user: null, isAuthenticated: false, isAdmin: false, orders: [], allOrders: [], allUsers: [], cart: [] });
+    set({ user: null, isAuthenticated: false, isAdmin: false, orders: [], allOrders: [], allUsers: [], cart: [], justCompletedOrder: false });
   },
 
   fetchGames: async () => {
@@ -220,10 +224,28 @@ export const useStore = create<AppState>((set, get) => ({
   clearCart: () => set({ cart: [] }),
   
   fetchOrders: async () => {
-    const { user } = get();
+    const { user, orders: currentOrders } = get();
     if (!user) return;
     const { data } = await supabase.from('orders').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
     if (data) {
+      let newlyCompleted = false;
+      if (currentOrders.length > 0) {
+        data.forEach(newOrder => {
+          if (newOrder.status === 'COMPLETED') {
+            const oldOrder = currentOrders.find(o => o.id === newOrder.id);
+            if (oldOrder && oldOrder.status !== 'COMPLETED') {
+              newlyCompleted = true;
+            }
+          }
+        });
+      }
+
+      // If called by real-time subscription or manual refresh, update the animation state.
+      // If it's a new completion, it becomes true. If it's a subsequent refresh, it becomes false.
+      if (currentOrders.length > 0) {
+        set({ justCompletedOrder: newlyCompleted });
+      }
+
       set({ orders: data.map(o => ({
         id: o.id,
         userId: o.user_id,

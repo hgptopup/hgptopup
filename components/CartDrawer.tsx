@@ -89,7 +89,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
-            className="fixed top-0 right-0 h-full w-full max-w-md glass border-l border-black/10 z-[70] shadow-2xl flex flex-col"
+            className="fixed top-0 right-0 h-full w-full max-w-md bg-[#FAF9F6] border-l border-black/10 z-[70] shadow-2xl flex flex-col"
           >
             <div className="p-6 border-b border-black/5 flex justify-between items-center bg-red-600/5">
               <h2 className="text-2xl font-display font-bold flex items-center gap-3 text-slate-900">
@@ -123,7 +123,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                     <p className="text-slate-500 text-sm mb-8 px-6 font-medium leading-relaxed">
                       We have received your payment intel. Deployment usually starts within 5-30 minutes. You can track this in your profile history.
                     </p>
-                    <button onClick={resetDrawer} className="w-full py-4 bg-green-600 hover:bg-green-700 text-white font-bold rounded-2xl transition-all shadow-xl shadow-green-600/20 uppercase tracking-widest text-xs">Understood</button>
+                    <button onClick={resetDrawer} className="w-full py-4 bg-green-600 hover:bg-green-700 text-[#FAF9F6] font-bold rounded-2xl transition-all shadow-xl shadow-green-600/20 uppercase tracking-widest text-xs">Understood</button>
                   </motion.div>
                 ) : !showPayment ? (
                   <motion.div 
@@ -148,7 +148,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                         <motion.div 
                           layout
                           key={item.cartId}
-                          className="glass p-4 rounded-2xl flex items-center gap-4 relative overflow-hidden group border border-black/5"
+                          className="bg-white p-4 rounded-2xl flex items-center gap-4 relative overflow-hidden group border border-black/5 shadow-sm"
                         >
                           <img src={item.image} className="w-16 h-16 rounded-xl object-cover" alt={item.gameTitle} />
                           <div className="flex-1">
@@ -197,8 +197,8 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                             onClick={() => setPaymentMethod(method)}
                             className={`p-3 rounded-xl border transition-all text-xs font-bold ${
                               paymentMethod === method 
-                                ? 'bg-red-600 border-red-600 text-white' 
-                                : 'bg-slate-50 border-black/10 text-slate-500 hover:border-black/20'
+                                ? 'bg-red-600 border-red-600 text-[#FAF9F6]' 
+                                : 'bg-[#FAF9F6] border-black/10 text-slate-500 hover:border-black/20'
                             }`}
                           >
                             {method}
@@ -210,7 +210,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                         <motion.div 
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
-                          className="glass p-4 rounded-2xl border border-black/10 space-y-3"
+                          className="bg-white p-4 rounded-2xl border border-black/10 space-y-3 shadow-sm"
                         >
                           <div className="flex justify-between items-center">
                             <span className="text-xs text-slate-400 uppercase tracking-widest font-bold">Send Money to:</span>
@@ -218,7 +218,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                               <span className="text-sm font-mono text-slate-900 font-bold">{paymentNumbers[paymentMethod]}</span>
                               <button 
                                 onClick={() => copyToClipboard(paymentNumbers[paymentMethod])}
-                                className="p-1.5 bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors text-red-600"
+                                className="p-1.5 bg-[#FAF9F6] hover:bg-[#F0F0F0] rounded-lg transition-colors text-red-600"
                                 title="Copy Number"
                               >
                                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -234,13 +234,13 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                               value={transactionId}
                               onChange={(e) => setTransactionId(e.target.value)}
                               placeholder="Enter TrxID after payment"
-                              className="w-full bg-slate-50 border border-black/10 rounded-xl py-3 px-4 text-sm focus:outline-none focus:border-red-600 transition-all text-slate-900 font-mono"
+                              className="w-full bg-[#FAF9F6] border border-black/10 rounded-xl py-3 px-4 text-sm focus:outline-none focus:border-red-600 transition-all text-slate-900 font-mono"
                             />
                           </div>
                         </motion.div>
                       )}
 
-                      <div className="glass p-4 rounded-2xl border border-black/5 text-center space-y-2">
+                      <div className="bg-white p-4 rounded-2xl border border-black/5 text-center space-y-2 shadow-sm">
                         <h3 className="text-sm font-bold text-slate-900">Manual Payment</h3>
                         <p className="text-slate-500 text-[10px] leading-relaxed">
                           Please send the total amount to the number above and provide the Transaction ID. Our team will verify and process your order manually.
@@ -266,7 +266,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                 {!showPayment ? (
                   <button 
                     onClick={() => setShowPayment(true)}
-                    className="w-full py-4 bg-red-600 hover:bg-red-700 text-white font-bold rounded-2xl shadow-xl shadow-red-600/20 transition-all flex items-center justify-center space-x-2"
+                    className="w-full py-4 bg-red-600 hover:bg-red-700 text-[#FAF9F6] font-bold rounded-2xl shadow-xl shadow-red-600/20 transition-all flex items-center justify-center space-x-2"
                   >
                     <span>Secure Checkout</span>
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -277,7 +277,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                   <button 
                     disabled={isProcessing}
                     onClick={handleCheckout}
-                    className={`w-full py-4 rounded-2xl font-bold transition-all flex items-center justify-center space-x-2 ${isProcessing ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-black/5' : 'bg-red-600 hover:bg-red-700 text-white shadow-xl shadow-red-600/20'}`}
+                    className={`w-full py-4 rounded-2xl font-bold transition-all flex items-center justify-center space-x-2 ${isProcessing ? 'bg-[#F0F0F0] text-slate-400 cursor-not-allowed border border-black/5' : 'bg-red-600 hover:bg-red-700 text-[#FAF9F6] shadow-xl shadow-red-600/20'}`}
                   >
                     {isProcessing ? (
                       <svg className="animate-spin h-5 w-5 text-slate-400" viewBox="0 0 24 24">

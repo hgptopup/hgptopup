@@ -284,7 +284,7 @@ const AdminDashboard: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen pt-24 pb-20 px-6 max-w-7xl mx-auto bg-white text-slate-900">
+    <div className="min-h-screen pt-24 pb-32 md:pb-20 px-6 max-w-7xl mx-auto bg-[#FAF9F6] text-slate-900">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
         <div>
           <h1 className="text-4xl font-display font-bold mb-2 text-slate-900">Admin <span className="text-red-600">Console</span></h1>
@@ -294,7 +294,7 @@ const AdminDashboard: React.FC = () => {
                 key={tab}
                 type="button"
                 onClick={() => setActiveTab(tab)}
-                className={`px-6 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${activeTab === tab ? 'bg-red-600 text-white shadow-lg shadow-red-600/20' : 'bg-slate-50 text-slate-500 border border-slate-200'}`}
+                className={`px-6 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${activeTab === tab ? 'bg-red-600 text-[#FAF9F6] shadow-lg shadow-red-600/20' : 'bg-[#FAF9F6] text-slate-500 border border-slate-200'}`}
               >
                 {tab}
               </button>
@@ -303,16 +303,16 @@ const AdminDashboard: React.FC = () => {
         </div>
         <div className="flex gap-4">
           {activeTab === 'ARMORY' && (
-            <button type="button" onClick={() => { setEditingGame(null); setEditingPkgId(null); setGameFormData({title:'',category:'FPS',description:'',image:'',banner:'',packages:[],featured:false}); setShowGameModal(true); }} className="px-6 py-3 bg-red-600 rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:bg-red-700 transition-all text-white shadow-lg shadow-red-600/20">
+            <button type="button" onClick={() => { setEditingGame(null); setEditingPkgId(null); setGameFormData({title:'',category:'FPS',description:'',image:'',banner:'',packages:[],featured:false}); setShowGameModal(true); }} className="px-6 py-3 bg-red-600 rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:bg-red-700 transition-all text-[#FAF9F6] shadow-lg shadow-red-600/20">
               Add New Game
             </button>
           )}
           {activeTab === 'VISUALS' && (
-            <button type="button" onClick={() => { setEditingIcon(null); setIconFormData({icon:'',label:'',delay:0,duration:4,position:'top-right'}); setShowIconModal(true); }} className="px-6 py-3 bg-red-600 rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:bg-red-700 transition-all text-white shadow-lg shadow-red-600/20">
+            <button type="button" onClick={() => { setEditingIcon(null); setIconFormData({icon:'',label:'',delay:0,duration:4,position:'top-right'}); setShowIconModal(true); }} className="px-6 py-3 bg-red-600 rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:bg-red-700 transition-all text-[#FAF9F6] shadow-lg shadow-red-600/20">
               Add Floating Icon
             </button>
           )}
-          <button type="button" onClick={handleSyncData} className="px-6 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:border-red-600/50 transition-all text-slate-600">
+          <button type="button" onClick={handleSyncData} className="px-6 py-3 bg-[#FAF9F6] border border-slate-200 rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:border-red-600/50 transition-all text-slate-600">
             Sync Data
           </button>
           <button type="button" onClick={handleTestNotifications} className="px-6 py-3 bg-red-600/10 border border-red-600/20 rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:bg-red-600/20 transition-all text-red-600">
@@ -331,16 +331,16 @@ const AdminDashboard: React.FC = () => {
                   { label: 'Active Catalog', value: stats.activeCatalog, color: 'text-red-600' },
                   { label: 'Total Users', value: stats.totalUsers, color: 'text-red-600' }
                 ].map((s, i) => (
-                  <div key={i} className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
+                  <div key={i} className="bg-[#FAF9F6] p-8 rounded-3xl border border-slate-200 shadow-sm">
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{s.label}</p>
                     <p className={`text-2xl font-display font-bold ${s.color}`}>{s.prefix}{s.value}</p>
                   </div>
                 ))}
              </div>
-             <div className="bg-white rounded-[2.5rem] border border-slate-200 overflow-hidden shadow-sm">
+             <div className="bg-[#FAF9F6] rounded-[2.5rem] border border-slate-200 overflow-hidden shadow-sm">
                 <div className="p-6 border-b border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4">
                    <h3 className="font-display font-bold text-xl text-slate-900">Active Orders</h3>
-                   <input type="text" placeholder="Search ID..." value={searchId} onChange={e => setSearchId(e.target.value)} className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm outline-none w-full md:w-64 text-slate-900 focus:border-red-600" />
+                   <input type="text" placeholder="Search ID..." value={searchId} onChange={e => setSearchId(e.target.value)} className="bg-[#FAF9F6] border border-slate-200 rounded-xl px-4 py-2 text-sm outline-none w-full md:w-64 text-slate-900 focus:border-red-600" />
                 </div>
                 <div className="overflow-x-auto">
                    <table className="w-full text-left">
@@ -351,7 +351,7 @@ const AdminDashboard: React.FC = () => {
                       </thead>
                       <tbody className="divide-y divide-slate-100">
                          {filteredOrders.map(order => (
-                            <tr key={order.id} className="hover:bg-slate-50 transition-colors group cursor-pointer" onClick={() => setSelectedOrderDetails(order)}>
+                            <tr key={order.id} className="hover:bg-[#F0F0F0] transition-colors group cursor-pointer" onClick={() => setSelectedOrderDetails(order)}>
                                <td className="p-6 font-mono text-xs text-slate-400">{order.id}</td>
                                <td className="p-6">
                                  <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{order.paymentMethod || 'N/A'}</div>
@@ -379,7 +379,7 @@ const AdminDashboard: React.FC = () => {
                                      <button type="button" onClick={() => handleStatusChange(order, 'CANCELLED')} className="px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg text-[10px] font-bold uppercase transition-colors">Void</button>
                                    </>
                                  )}
-                                 <button type="button" className="p-1.5 bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors group-hover:bg-red-600/10">
+                                 <button type="button" className="p-1.5 bg-[#FAF9F6] hover:bg-[#F0F0F0] rounded-lg transition-colors group-hover:bg-red-600/10">
                                    <svg className="w-4 h-4 text-slate-400 group-hover:text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -399,9 +399,9 @@ const AdminDashboard: React.FC = () => {
           <motion.div key="armory" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {games.map(game => (
-                  <div key={game.id} className="bg-white p-6 rounded-[2.5rem] border border-slate-200 hover:border-red-600/20 transition-all flex flex-col group relative shadow-sm">
+                  <div key={game.id} className="bg-[#FAF9F6] p-6 rounded-[2.5rem] border border-slate-200 hover:border-red-600/20 transition-all flex flex-col group relative shadow-sm">
                     <div className="flex gap-4 mb-6">
-                      <div className="relative w-24 h-28 rounded-2xl overflow-hidden shrink-0 border border-slate-200 shadow-md bg-slate-50">
+                      <div className="relative w-24 h-28 rounded-2xl overflow-hidden shrink-0 border border-slate-200 shadow-md bg-[#FAF9F6]">
                         <img src={game.image} className="w-full h-full object-cover" alt={game.title} />
                       </div>
                       <div className="flex-1">
@@ -411,7 +411,7 @@ const AdminDashboard: React.FC = () => {
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-3 mt-auto">
-                      <button type="button" onClick={() => { setEditingGame(game); setGameFormData(game); setShowGameModal(true); }} className="py-3 bg-slate-50 hover:bg-slate-100 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all text-slate-900 flex items-center justify-center gap-2 border border-slate-200">Edit</button>
+                      <button type="button" onClick={() => { setEditingGame(game); setGameFormData(game); setShowGameModal(true); }} className="py-3 bg-[#FAF9F6] hover:bg-[#FAF9F6]/80 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all text-slate-900 flex items-center justify-center gap-2 border border-slate-200">Edit</button>
                       <button type="button" disabled={deletingId === game.id} onClick={() => handleDeleteGame(game.id)} className={`py-3 bg-red-600/10 hover:bg-red-600/20 text-red-600 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${deletingId === game.id ? 'opacity-50 cursor-not-allowed' : ''}`}>{deletingId === game.id ? 'Deleting...' : 'Delete'}</button>
                     </div>
                   </div>
@@ -424,8 +424,8 @@ const AdminDashboard: React.FC = () => {
           <motion.div key="visuals" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {floatingIcons.map(icon => (
-                  <div key={icon.id} className="bg-white p-6 rounded-[2.5rem] border border-slate-200 hover:border-red-600/20 transition-all flex flex-col group shadow-sm">
-                    <div className="w-20 h-20 bg-slate-50 rounded-2xl flex items-center justify-center text-4xl mb-4 border border-slate-200">
+                  <div key={icon.id} className="bg-[#FAF9F6] p-6 rounded-[2.5rem] border border-slate-200 hover:border-red-600/20 transition-all flex flex-col group shadow-sm">
+                    <div className="w-20 h-20 bg-[#FAF9F6] rounded-2xl flex items-center justify-center text-4xl mb-4 border border-slate-200">
                       {icon.icon.startsWith('http') || icon.icon.startsWith('data:image/') ? <img src={icon.icon} className="w-12 h-12 object-contain" alt="" /> : icon.icon}
                     </div>
                     <div className="flex-1">
@@ -433,7 +433,7 @@ const AdminDashboard: React.FC = () => {
                       <p className="text-[10px] text-slate-400 uppercase tracking-widest mt-1">{icon.position}</p>
                     </div>
                     <div className="grid grid-cols-2 gap-2 mt-6">
-                      <button type="button" onClick={() => { setEditingIcon(icon); setIconFormData(icon); setShowIconModal(true); }} className="py-2 bg-slate-50 hover:bg-slate-100 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all text-slate-900 border border-slate-200">Edit</button>
+                      <button type="button" onClick={() => { setEditingIcon(icon); setIconFormData(icon); setShowIconModal(true); }} className="py-2 bg-[#FAF9F6] hover:bg-[#FAF9F6]/80 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all text-slate-900 border border-slate-200">Edit</button>
                       <button type="button" disabled={deletingId === icon.id} onClick={() => handleDeleteIcon(icon.id)} className={`py-2 bg-red-600/10 hover:bg-red-600/20 text-red-600 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${deletingId === icon.id ? 'opacity-50 cursor-not-allowed' : ''}`}>Delete</button>
                     </div>
                   </div>
@@ -444,10 +444,10 @@ const AdminDashboard: React.FC = () => {
 
           {activeTab === 'USERS' && (
           <motion.div key="users" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
-            <div className="bg-white rounded-[2.5rem] border border-slate-200 overflow-hidden shadow-sm">
+            <div className="bg-[#FAF9F6] rounded-[2.5rem] border border-slate-200 overflow-hidden shadow-sm">
                 <div className="p-6 border-b border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4">
                    <h3 className="font-display font-bold text-xl text-slate-900">Players</h3>
-                   <input type="text" placeholder="Search User..." value={userSearch} onChange={e => setUserSearch(e.target.value)} className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm outline-none w-full md:w-64 text-slate-900 focus:border-red-600" />
+                   <input type="text" placeholder="Search User..." value={userSearch} onChange={e => setUserSearch(e.target.value)} className="bg-[#FAF9F6] border border-slate-200 rounded-xl px-4 py-2 text-sm outline-none w-full md:w-64 text-slate-900 focus:border-red-600" />
                 </div>
                 <div className="overflow-x-auto">
                    <table className="w-full text-left">
@@ -455,7 +455,7 @@ const AdminDashboard: React.FC = () => {
                          <tr className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-200"><th className="p-6">Name</th><th className="p-6">Email</th><th className="p-6">Joined</th></tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
-                         {filteredUsers.map(u => (<tr key={u.id} className="hover:bg-slate-50 transition-colors"><td className="p-6 text-slate-900 font-bold">{u.full_name}</td><td className="p-6 text-slate-500">{u.email}</td><td className="p-6 text-xs text-slate-400">{new Date(u.created_at).toLocaleDateString()}</td></tr>))}
+                         {filteredUsers.map(u => (<tr key={u.id} className="hover:bg-[#FAF9F6] transition-colors"><td className="p-6 text-slate-900 font-bold">{u.full_name}</td><td className="p-6 text-slate-500">{u.email}</td><td className="p-6 text-xs text-slate-400">{new Date(u.created_at).toLocaleDateString()}</td></tr>))}
                       </tbody>
                    </table>
                 </div>
@@ -468,14 +468,14 @@ const AdminDashboard: React.FC = () => {
          {selectedOrderDetails && (
           <div className="fixed inset-0 flex items-center justify-center z-[500] p-6">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/60 backdrop-blur-xl" onClick={() => setSelectedOrderDetails(null)} />
-            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-[#0B0B0F] border border-white/10 rounded-[3rem] p-8 md:p-12 max-w-2xl w-full relative z-10 shadow-2xl overflow-hidden">
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-[#0B0B0F] border border-[#FAF9F6]/10 rounded-[3rem] p-8 md:p-12 max-w-2xl w-full relative z-10 shadow-2xl overflow-hidden">
                <div className="flex justify-between items-start mb-10">
                  <div>
                    <p className="text-red-600 text-[10px] font-bold uppercase tracking-[0.4em] mb-2">Order Intelligence</p>
-                   <h2 className="text-3xl font-display font-bold text-white">Ref: <span className="font-mono">{selectedOrderDetails.id}</span></h2>
+                   <h2 className="text-3xl font-display font-bold text-[#FAF9F6]">Ref: <span className="font-mono">{selectedOrderDetails.id}</span></h2>
                  </div>
-                 <button onClick={() => setSelectedOrderDetails(null)} className="p-3 bg-white/5 hover:bg-white/10 rounded-2xl transition-all">
-                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <button onClick={() => setSelectedOrderDetails(null)} className="p-3 bg-[#FAF9F6]/5 hover:bg-[#FAF9F6]/10 rounded-2xl transition-all">
+                    <svg className="w-6 h-6 text-[#FAF9F6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                  </button>
@@ -483,16 +483,16 @@ const AdminDashboard: React.FC = () => {
 
                <div className="space-y-8">
                   <div className="grid grid-cols-2 gap-4">
-                     <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
+                     <div className="bg-[#FAF9F6]/5 p-4 rounded-2xl border border-[#FAF9F6]/5">
                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Payment Method</p>
-                       <p className="text-sm font-bold text-white">{selectedOrderDetails.paymentMethod || 'N/A'}</p>
+                       <p className="text-sm font-bold text-[#FAF9F6]">{selectedOrderDetails.paymentMethod || 'N/A'}</p>
                      </div>
-                     <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
+                     <div className="bg-[#FAF9F6]/5 p-4 rounded-2xl border border-[#FAF9F6]/5">
                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Transaction ID</p>
                        <div className="flex items-center justify-between gap-2">
                          <p className="text-sm font-mono font-bold text-red-500 truncate">{selectedOrderDetails.transactionId || 'N/A'}</p>
                          {selectedOrderDetails.transactionId && (
-                           <button onClick={() => navigator.clipboard.writeText(selectedOrderDetails.transactionId!)} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-slate-400 hover:text-white shrink-0">
+                           <button onClick={() => navigator.clipboard.writeText(selectedOrderDetails.transactionId!)} className="p-1.5 hover:bg-[#FAF9F6]/10 rounded-lg transition-colors text-slate-400 hover:text-[#FAF9F6] shrink-0">
                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg>
                            </button>
                          )}
@@ -500,45 +500,45 @@ const AdminDashboard: React.FC = () => {
                      </div>
                   </div>
                   {selectedOrderDetails.items.map((item, idx) => (
-                    <div key={idx} className="bg-white/5 p-6 rounded-3xl border border-white/5">
+                    <div key={idx} className="bg-[#FAF9F6]/5 p-6 rounded-3xl border border-[#FAF9F6]/5">
                       <div className="flex gap-6 mb-8 items-start">
-                        <img src={item.image} className="w-20 h-24 rounded-2xl object-cover shadow-xl border border-white/10" alt="" />
+                        <img src={item.image} className="w-20 h-24 rounded-2xl object-cover shadow-xl border border-[#FAF9F6]/10" alt="" />
                         <div className="min-w-0 flex-1">
-                          <h3 className="text-xl font-bold text-white mb-1 truncate">{item.gameTitle}</h3>
+                          <h3 className="text-xl font-bold text-[#FAF9F6] mb-1 truncate">{item.gameTitle}</h3>
                           <p className="text-red-500 font-bold text-xs uppercase tracking-widest mb-3 truncate">{item.packageName}</p>
-                          <div className="px-3 py-1 bg-white/10 rounded-lg inline-block text-[10px] font-bold text-slate-300 uppercase tracking-widest">
+                          <div className="px-3 py-1 bg-[#FAF9F6]/10 rounded-lg inline-block text-[10px] font-bold text-slate-300 uppercase tracking-widest">
                             Method: {item.loginMethod}
                           </div>
                         </div>
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
+                        <div className="bg-[#FAF9F6]/5 p-4 rounded-2xl border border-[#FAF9F6]/5">
                           <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Target Account / UID</p>
                           <div className="flex items-center justify-between gap-2">
-                            <p className="text-sm font-mono font-bold text-white truncate">{item.playerId}</p>
-                            <button onClick={() => navigator.clipboard.writeText(item.playerId)} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-slate-400 hover:text-white shrink-0">
+                            <p className="text-sm font-mono font-bold text-[#FAF9F6] truncate">{item.playerId}</p>
+                            <button onClick={() => navigator.clipboard.writeText(item.playerId)} className="p-1.5 hover:bg-[#FAF9F6]/10 rounded-lg transition-colors text-slate-400 hover:text-[#FAF9F6] shrink-0">
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg>
                             </button>
                           </div>
                         </div>
                         {item.password && (
-                          <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
+                          <div className="bg-[#FAF9F6]/5 p-4 rounded-2xl border border-[#FAF9F6]/5">
                             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Access Password</p>
                             <div className="flex items-center justify-between gap-2">
                               <p className="text-sm font-mono font-bold text-red-500 truncate">{item.password}</p>
-                              <button onClick={() => navigator.clipboard.writeText(item.password!)} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-slate-400 hover:text-white shrink-0">
+                              <button onClick={() => navigator.clipboard.writeText(item.password!)} className="p-1.5 hover:bg-[#FAF9F6]/10 rounded-lg transition-colors text-slate-400 hover:text-[#FAF9F6] shrink-0">
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg>
                               </button>
                             </div>
                           </div>
                         )}
                         {item.whatsapp && (
-                          <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
+                          <div className="bg-[#FAF9F6]/5 p-4 rounded-2xl border border-[#FAF9F6]/5">
                             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">WhatsApp Liaison</p>
                             <div className="flex items-center justify-between gap-2">
-                              <p className="text-sm font-mono font-bold text-white truncate">{item.whatsapp}</p>
-                              <button onClick={() => navigator.clipboard.writeText(item.whatsapp!)} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-slate-400 hover:text-white shrink-0">
+                              <p className="text-sm font-mono font-bold text-[#FAF9F6] truncate">{item.whatsapp}</p>
+                              <button onClick={() => navigator.clipboard.writeText(item.whatsapp!)} className="p-1.5 hover:bg-[#FAF9F6]/10 rounded-lg transition-colors text-slate-400 hover:text-[#FAF9F6] shrink-0">
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg>
                               </button>
                             </div>
@@ -550,9 +550,9 @@ const AdminDashboard: React.FC = () => {
 
                   <div className="flex gap-4 pt-4">
                     {selectedOrderDetails.status === 'PENDING' && (
-                      <button onClick={() => { handleStatusChange(selectedOrderDetails, 'COMPLETED'); setSelectedOrderDetails(null); }} className="flex-1 py-5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-2xl transition-all shadow-xl shadow-green-600/20 uppercase tracking-widest text-xs">Deploy Package</button>
+                      <button onClick={() => { handleStatusChange(selectedOrderDetails, 'COMPLETED'); setSelectedOrderDetails(null); }} className="flex-1 py-5 bg-green-600 hover:bg-green-700 text-[#FAF9F6] font-bold rounded-2xl transition-all shadow-xl shadow-green-600/20 uppercase tracking-widest text-xs">Deploy Package</button>
                     )}
-                    <button onClick={() => setSelectedOrderDetails(null)} className="flex-1 py-5 bg-white/5 hover:bg-white/10 text-white font-bold rounded-2xl transition-all border border-white/10 uppercase tracking-widest text-xs">Dismiss Intel</button>
+                    <button onClick={() => setSelectedOrderDetails(null)} className="flex-1 py-5 bg-[#FAF9F6]/5 hover:bg-[#FAF9F6]/10 text-[#FAF9F6] font-bold rounded-2xl transition-all border border-[#FAF9F6]/10 uppercase tracking-widest text-xs">Dismiss Intel</button>
                   </div>
                </div>
             </motion.div>
@@ -564,13 +564,13 @@ const AdminDashboard: React.FC = () => {
          {showBannerModal && (
           <div className="fixed inset-0 flex items-center justify-center z-[400] p-6">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/40 backdrop-blur-xl" onClick={() => setShowBannerModal(false)} />
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="glass border border-black/10 rounded-[2.5rem] p-8 md:p-10 max-w-xl w-full relative z-10 shadow-2xl">
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-[#FAF9F6] border border-black/10 rounded-[2.5rem] p-8 md:p-10 max-w-xl w-full relative z-10 shadow-2xl">
               <h2 className="text-2xl font-display font-bold mb-8 text-slate-900">Banner <span className="text-red-600">Protocol</span></h2>
               <form onSubmit={handleSaveBanner} className="space-y-6">
-                <div><label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">Title</label><input type="text" required value={bannerFormData.title} onChange={e => setBannerFormData({...bannerFormData, title: e.target.value})} className="w-full bg-slate-50 border border-black/10 rounded-2xl py-4 px-5 text-sm outline-none focus:border-red-600 text-slate-900" /></div>
-                <div><label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">Tagline</label><input type="text" placeholder="e.g., Limited Time" value={bannerFormData.tag} onChange={e => setBannerFormData({...bannerFormData, tag: e.target.value})} className="w-full bg-slate-50 border border-black/10 rounded-2xl py-4 px-5 text-sm outline-none focus:border-red-600 text-slate-900" /></div>
-                <div><label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">Banner Image URL</label><div className="flex gap-2"><input type="text" value={bannerFormData.image_url} onChange={e => setBannerFormData({...bannerFormData, image_url: e.target.value})} className="flex-1 bg-slate-50 border border-black/10 rounded-2xl py-4 px-5 text-sm outline-none focus:border-red-600 text-slate-900" /><button type="button" onClick={() => bannerInputRef.current?.click()} className="px-6 py-4 bg-slate-100 rounded-2xl text-[10px] font-bold uppercase hover:bg-slate-200 text-slate-900">Upload</button><input type="file" ref={bannerInputRef} className="hidden" accept="image/*" onChange={e => handleFileUpload(e, 'image_url', setBannerFormData)} /></div></div>
-                <button type="submit" disabled={isSubmitting} className="w-full py-5 bg-red-600 hover:bg-red-700 rounded-2xl font-bold uppercase text-xs shadow-xl text-white">{isSubmitting ? 'Processing...' : 'Deploy Banner'}</button>
+                <div><label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">Title</label><input type="text" required value={bannerFormData.title} onChange={e => setBannerFormData({...bannerFormData, title: e.target.value})} className="w-full bg-[#FAF9F6] border border-black/10 rounded-2xl py-4 px-5 text-sm outline-none focus:border-red-600 text-slate-900" /></div>
+                <div><label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">Tagline</label><input type="text" placeholder="e.g., Limited Time" value={bannerFormData.tag} onChange={e => setBannerFormData({...bannerFormData, tag: e.target.value})} className="w-full bg-[#FAF9F6] border border-black/10 rounded-2xl py-4 px-5 text-sm outline-none focus:border-red-600 text-slate-900" /></div>
+                <div><label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">Banner Image URL</label><div className="flex gap-2"><input type="text" value={bannerFormData.image_url} onChange={e => setBannerFormData({...bannerFormData, image_url: e.target.value})} className="flex-1 bg-[#FAF9F6] border border-black/10 rounded-2xl py-4 px-5 text-sm outline-none focus:border-red-600 text-slate-900" /><button type="button" onClick={() => bannerInputRef.current?.click()} className="px-6 py-4 bg-[#FAF9F6] rounded-2xl text-[10px] font-bold uppercase hover:bg-[#FAF9F6]/80 text-slate-900">Upload</button><input type="file" ref={bannerInputRef} className="hidden" accept="image/*" onChange={e => handleFileUpload(e, 'image_url', setBannerFormData)} /></div></div>
+                <button type="submit" disabled={isSubmitting} className="w-full py-5 bg-red-600 hover:bg-red-700 rounded-2xl font-bold uppercase text-xs shadow-xl text-[#FAF9F6]">{isSubmitting ? 'Processing...' : 'Deploy Banner'}</button>
               </form>
             </motion.div>
           </div>
@@ -581,7 +581,7 @@ const AdminDashboard: React.FC = () => {
          {showIconModal && (
           <div className="fixed inset-0 flex items-center justify-center z-[400] p-6">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/40 backdrop-blur-xl" onClick={() => setShowIconModal(false)} />
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="glass border border-black/10 rounded-[2.5rem] p-8 md:p-10 max-w-xl w-full relative z-10 shadow-2xl">
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-[#FAF9F6] border border-black/10 rounded-[2.5rem] p-8 md:p-10 max-w-xl w-full relative z-10 shadow-2xl">
               <h2 className="text-2xl font-display font-bold mb-8 text-slate-900">Floating Icon <span className="text-red-600">Config</span></h2>
               <form onSubmit={handleSaveIcon} className="space-y-6">
                 <div>
@@ -592,12 +592,12 @@ const AdminDashboard: React.FC = () => {
                       required 
                       value={iconFormData.icon} 
                       onChange={e => setIconFormData({...iconFormData, icon: e.target.value})} 
-                      className="flex-1 bg-slate-50 border border-black/10 rounded-2xl py-4 px-5 text-sm outline-none focus:border-red-600 text-slate-900" 
+                      className="flex-1 bg-[#FAF9F6] border border-black/10 rounded-2xl py-4 px-5 text-sm outline-none focus:border-red-600 text-slate-900" 
                     />
                     <button 
                       type="button" 
                       onClick={() => iconInputRef.current?.click()} 
-                      className="px-6 py-4 bg-slate-100 rounded-2xl text-[10px] font-bold uppercase hover:bg-slate-200 text-slate-900"
+                      className="px-6 py-4 bg-[#FAF9F6] rounded-2xl text-[10px] font-bold uppercase hover:bg-[#FAF9F6]/80 text-slate-900"
                     >
                       Upload
                     </button>
@@ -610,12 +610,12 @@ const AdminDashboard: React.FC = () => {
                     />
                   </div>
                 </div>
-                <div><label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">Label (Optional)</label><input type="text" value={iconFormData.label} onChange={e => setIconFormData({...iconFormData, label: e.target.value})} className="w-full bg-slate-50 border border-black/10 rounded-2xl py-4 px-5 text-sm outline-none focus:border-red-600 text-slate-900" /></div>
+                <div><label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">Label (Optional)</label><input type="text" value={iconFormData.label} onChange={e => setIconFormData({...iconFormData, label: e.target.value})} className="w-full bg-[#FAF9F6] border border-black/10 rounded-2xl py-4 px-5 text-sm outline-none focus:border-red-600 text-slate-900" /></div>
                 <div className="grid grid-cols-2 gap-4">
-                  <div><label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">Position</label><select value={iconFormData.position} onChange={e => setIconFormData({...iconFormData, position: e.target.value as any})} className="w-full bg-slate-50 border border-black/10 rounded-2xl py-4 px-5 text-sm text-slate-900"><option value="top-left">Top Left</option><option value="top-right">Top Right</option><option value="bottom-left">Bottom Left</option><option value="bottom-right">Bottom Right</option><option value="center-left">Center Left</option><option value="center-right">Center Right</option></select></div>
-                  <div><label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">Duration (s)</label><input type="number" value={iconFormData.duration} onChange={e => setIconFormData({...iconFormData, duration: Number(e.target.value)})} className="w-full bg-slate-50 border border-black/10 rounded-2xl py-4 px-5 text-sm outline-none focus:border-red-600 text-slate-900" /></div>
+                  <div><label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">Position</label><select value={iconFormData.position} onChange={e => setIconFormData({...iconFormData, position: e.target.value as any})} className="w-full bg-[#FAF9F6] border border-black/10 rounded-2xl py-4 px-5 text-sm text-slate-900"><option value="top-left">Top Left</option><option value="top-right">Top Right</option><option value="bottom-left">Bottom Left</option><option value="bottom-right">Bottom Right</option><option value="center-left">Center Left</option><option value="center-right">Center Right</option></select></div>
+                  <div><label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">Duration (s)</label><input type="number" value={iconFormData.duration} onChange={e => setIconFormData({...iconFormData, duration: Number(e.target.value)})} className="w-full bg-[#FAF9F6] border border-black/10 rounded-2xl py-4 px-5 text-sm outline-none focus:border-red-600 text-slate-900" /></div>
                 </div>
-                <button type="submit" disabled={isSubmitting} className="w-full py-5 bg-red-600 hover:bg-red-700 rounded-2xl font-bold uppercase text-xs shadow-xl text-white">{isSubmitting ? 'Processing...' : 'Save Icon'}</button>
+                <button type="submit" disabled={isSubmitting} className="w-full py-5 bg-red-600 hover:bg-red-700 rounded-2xl font-bold uppercase text-xs shadow-xl text-[#FAF9F6]">{isSubmitting ? 'Processing...' : 'Save Icon'}</button>
               </form>
             </motion.div>
           </div>
@@ -626,26 +626,26 @@ const AdminDashboard: React.FC = () => {
          {showGameModal && (
           <div className="fixed inset-0 flex items-center justify-center z-[300] p-6">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/40 backdrop-blur-md" onClick={() => setShowGameModal(false)} />
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="glass border border-black/10 rounded-[2.5rem] p-8 md:p-10 max-w-3xl w-full relative z-10 max-h-[90vh] overflow-y-auto shadow-2xl">
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-[#FAF9F6] border border-black/10 rounded-[2.5rem] p-8 md:p-10 max-w-3xl w-full relative z-10 max-h-[90vh] overflow-y-auto shadow-2xl">
               <h2 className="text-2xl font-display font-bold mb-8 text-slate-900">Catalogue <span className="text-red-600">Configuration</span></h2>
               <form onSubmit={handleSaveGame} className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
-                  <div><label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">Title</label><input type="text" required value={gameFormData.title} onChange={e => setGameFormData({...gameFormData, title: e.target.value})} className="w-full bg-slate-50 border border-black/10 rounded-2xl py-4 px-5 text-sm outline-none focus:border-red-600 text-slate-900" /></div>
-                  <div><label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">Category</label><select value={gameFormData.category} onChange={e => setGameFormData({...gameFormData, category: e.target.value as any})} className="w-full bg-slate-50 border border-black/10 rounded-2xl py-4 px-5 text-sm text-slate-900"><option value="FPS">FPS</option><option value="MOBA">MOBA</option><option value="BATTLE_ROYALE">BATTLE_ROYALE</option><option value="RPG">RPG</option><option value="SPORTS">SPORTS</option></select></div>
+                  <div><label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">Title</label><input type="text" required value={gameFormData.title} onChange={e => setGameFormData({...gameFormData, title: e.target.value})} className="w-full bg-[#FAF9F6] border border-black/10 rounded-2xl py-4 px-5 text-sm outline-none focus:border-red-600 text-slate-900" /></div>
+                  <div><label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">Category</label><select value={gameFormData.category} onChange={e => setGameFormData({...gameFormData, category: e.target.value as any})} className="w-full bg-[#FAF9F6] border border-black/10 rounded-2xl py-4 px-5 text-sm text-slate-900"><option value="FPS">FPS</option><option value="MOBA">MOBA</option><option value="BATTLE_ROYALE">BATTLE_ROYALE</option><option value="RPG">RPG</option><option value="SPORTS">SPORTS</option></select></div>
                 </div>
-                <div><label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">Description</label><textarea value={gameFormData.description} onChange={e => setGameFormData({...gameFormData, description: e.target.value})} rows={3} className="w-full bg-slate-50 border border-black/10 rounded-2xl py-4 px-5 text-sm text-slate-900 resize-none focus:border-red-600" /></div>
-                <div><label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">Portrait Image URL</label><div className="flex gap-2"><input type="text" value={gameFormData.image} onChange={e => setGameFormData({...gameFormData, image: e.target.value})} className="flex-1 bg-slate-50 border border-black/10 rounded-2xl py-4 px-5 text-sm outline-none focus:border-red-600 text-slate-900" /><button type="button" onClick={() => portraitInputRef.current?.click()} className="px-6 py-4 bg-slate-100 rounded-2xl text-[10px] font-bold uppercase hover:bg-slate-200 text-slate-900">Upload</button><input type="file" ref={portraitInputRef} className="hidden" accept="image/*" onChange={e => handleFileUpload(e, 'image', setGameFormData)} /></div></div>
-                <div className="p-6 bg-slate-50 rounded-3xl border border-black/5">
+                <div><label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">Description</label><textarea value={gameFormData.description} onChange={e => setGameFormData({...gameFormData, description: e.target.value})} rows={3} className="w-full bg-[#FAF9F6] border border-black/10 rounded-2xl py-4 px-5 text-sm text-slate-900 resize-none focus:border-red-600" /></div>
+                <div><label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">Portrait Image URL</label><div className="flex gap-2"><input type="text" value={gameFormData.image} onChange={e => setGameFormData({...gameFormData, image: e.target.value})} className="flex-1 bg-[#FAF9F6] border border-black/10 rounded-2xl py-4 px-5 text-sm outline-none focus:border-red-600 text-slate-900" /><button type="button" onClick={() => portraitInputRef.current?.click()} className="px-6 py-4 bg-[#FAF9F6] rounded-2xl text-[10px] font-bold uppercase hover:bg-[#FAF9F6]/80 text-slate-900">Upload</button><input type="file" ref={portraitInputRef} className="hidden" accept="image/*" onChange={e => handleFileUpload(e, 'image', setGameFormData)} /></div></div>
+                <div className="p-6 bg-[#FAF9F6] rounded-3xl border border-black/5">
                   <h3 className="text-xs font-bold uppercase tracking-widest mb-6 text-slate-900">Packages Inventory</h3>
-                  <div className="space-y-2 mb-8">{gameFormData.packages?.map(p => (<div key={p.id} className="p-4 bg-white rounded-xl border border-black/5 flex justify-between items-center"><div><span className="text-sm font-bold text-slate-900">{p.amount} {p.unit}</span><span className="mx-2 text-slate-200">|</span><span className="text-sm font-bold text-red-600">৳{p.price.toFixed(0)}</span></div><div className="flex gap-3"><button type="button" onClick={() => handleEditPackage(p)} className="text-[10px] font-bold uppercase text-slate-400 hover:text-slate-900">Edit</button><button type="button" onClick={() => removePackageFromForm(p.id)} className="text-[10px] font-bold uppercase text-red-600/40 hover:text-red-600">Delete</button></div></div>))}</div>
+                  <div className="space-y-2 mb-8">{gameFormData.packages?.map(p => (<div key={p.id} className="p-4 bg-[#FAF9F6] rounded-xl border border-black/5 flex justify-between items-center"><div><span className="text-sm font-bold text-slate-900">{p.amount} {p.unit}</span><span className="mx-2 text-slate-200">|</span><span className="text-sm font-bold text-red-600">৳{p.price.toFixed(0)}</span></div><div className="flex gap-3"><button type="button" onClick={() => handleEditPackage(p)} className="text-[10px] font-bold uppercase text-slate-400 hover:text-slate-900">Edit</button><button type="button" onClick={() => removePackageFromForm(p.id)} className="text-[10px] font-bold uppercase text-red-600/40 hover:text-red-600">Delete</button></div></div>))}</div>
                   <div className="grid grid-cols-4 gap-3">
-                    <input type="number" placeholder="Amt" value={newPkg.amount || ''} onChange={e => setNewPkg({...newPkg, amount: Number(e.target.value)})} className="bg-white border border-black/10 rounded-xl p-3 text-xs text-slate-900" />
-                    <input type="text" placeholder="Unit" value={newPkg.unit} onChange={e => setNewPkg({...newPkg, unit: e.target.value})} className="bg-white border border-black/10 rounded-xl p-3 text-xs text-slate-900" />
-                    <input type="number" step="0.01" placeholder="Price" value={newPkg.price || ''} onChange={e => setNewPkg({...newPkg, price: Number(e.target.value)})} className="bg-white border border-black/10 rounded-xl p-3 text-xs text-slate-900" />
-                    <button type="button" onClick={handleAddOrUpdatePackage} className={`py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest ${editingPkgId ? 'bg-red-600 text-white' : 'bg-slate-900 text-white'}`}>{editingPkgId ? 'Update' : 'Add'}</button>
+                    <input type="number" placeholder="Amt" value={newPkg.amount || ''} onChange={e => setNewPkg({...newPkg, amount: Number(e.target.value)})} className="bg-[#FAF9F6] border border-black/10 rounded-xl p-3 text-xs text-slate-900" />
+                    <input type="text" placeholder="Unit" value={newPkg.unit} onChange={e => setNewPkg({...newPkg, unit: e.target.value})} className="bg-[#FAF9F6] border border-black/10 rounded-xl p-3 text-xs text-slate-900" />
+                    <input type="number" step="0.01" placeholder="Price" value={newPkg.price || ''} onChange={e => setNewPkg({...newPkg, price: Number(e.target.value)})} className="bg-[#FAF9F6] border border-black/10 rounded-xl p-3 text-xs text-slate-900" />
+                    <button type="button" onClick={handleAddOrUpdatePackage} className={`py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest ${editingPkgId ? 'bg-red-600 text-[#FAF9F6]' : 'bg-slate-900 text-[#FAF9F6]'}`}>{editingPkgId ? 'Update' : 'Add'}</button>
                   </div>
                 </div>
-                <button type="submit" disabled={isSubmitting} className="w-full py-5 bg-red-600 hover:bg-red-700 rounded-2xl font-bold uppercase text-xs shadow-xl text-white">{isSubmitting ? 'Syncing...' : 'Deploy Catalogue Entry'}</button>
+                <button type="submit" disabled={isSubmitting} className="w-full py-5 bg-red-600 hover:bg-red-700 rounded-2xl font-bold uppercase text-xs shadow-xl text-[#FAF9F6]">{isSubmitting ? 'Syncing...' : 'Deploy Catalogue Entry'}</button>
               </form>
             </motion.div>
           </div>

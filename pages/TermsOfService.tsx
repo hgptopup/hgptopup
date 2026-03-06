@@ -39,11 +39,11 @@ const TermsOfService: React.FC<TermsOfServiceProps> = ({ onBack }) => {
   ];
 
   return (
-    <div className="min-h-screen pt-24 pb-20 bg-[#0B0B0F]">
+    <div className="min-h-screen pt-24 pb-32 md:pb-20 bg-[#0B0B0F]">
       <div className="max-w-4xl mx-auto px-6">
         <button 
           onClick={onBack} 
-          className="flex items-center space-x-2 text-slate-400 hover:text-white mb-8 transition-colors group"
+          className="flex items-center space-x-2 text-slate-400 hover:text-[#FAF9F6] mb-8 transition-colors group"
         >
           <svg className="w-5 h-5 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -54,12 +54,12 @@ const TermsOfService: React.FC<TermsOfServiceProps> = ({ onBack }) => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white/5 backdrop-blur-xl p-10 md:p-16 rounded-[2.5rem] border border-white/10 shadow-2xl relative overflow-hidden"
+          className="bg-[#FAF9F6]/5 backdrop-blur-xl p-10 md:p-16 rounded-[2.5rem] border border-[#FAF9F6]/10 shadow-2xl relative overflow-hidden"
         >
           <div className="absolute top-0 right-0 w-64 h-64 bg-red-600/5 rounded-full blur-[100px] -mr-32 -mt-32"></div>
           
           <div className="text-center mb-16 relative z-10">
-            <h1 className="text-4xl md:text-5xl font-display font-bold mb-4 text-white">
+            <h1 className="text-4xl md:text-5xl font-display font-bold mb-4 text-[#FAF9F6]">
               Hasibul <span className="neon-text-red">Game Point</span>
             </h1>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.4em] mb-12">Terms of Service Protocol</p>
@@ -85,7 +85,7 @@ const TermsOfService: React.FC<TermsOfServiceProps> = ({ onBack }) => {
             ))}
           </div>
 
-          <div className="mt-20 pt-10 border-t border-white/10 text-center relative z-10">
+          <div className="mt-20 pt-10 border-t border-[#FAF9F6]/10 text-center relative z-10">
             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.3em]">Operational Compliance • Hasibul Game Point HQ</p>
           </div>
         </motion.div>

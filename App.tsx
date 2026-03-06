@@ -34,7 +34,7 @@ const App: React.FC = () => {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   
-  const { setSession, isAuthenticated, isAdmin, games, fetchGames, logout } = useStore();
+  const { setSession, isAuthenticated, isAdmin, games, fetchGames, logout, user, fetchOrders, setJustCompletedOrder } = useStore();
 
   useEffect(() => {
     fetchGames();
@@ -55,6 +55,30 @@ const App: React.FC = () => {
       clearTimeout(timer);
     };
   }, [setSession, fetchGames]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !user) return;
+
+    const channel = supabase
+      .channel('orders-channel')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'orders',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          fetchOrders();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isAuthenticated, user, fetchOrders, setJustCompletedOrder]);
 
   const handleGoHome = () => {
     setSelectedGame(null);
@@ -139,7 +163,7 @@ const App: React.FC = () => {
   }, [searchQuery, activeGames]);
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 overflow-x-hidden">
+    <div className="min-h-screen bg-[#FAF9F6] text-slate-900 overflow-x-hidden">
       <BackgroundAnimation />
       <AnimatePresence>
         {isInitialLoading && <SplashScreen />}
@@ -180,7 +204,7 @@ const App: React.FC = () => {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
           >
-            <Profile onBack={handleGoHome} />
+            <Profile onBack={handleGoHome} onOpenAdmin={handleOpenAdmin} />
           </motion.div>
         ) : showTerms ? (
           <motion.div
@@ -239,7 +263,7 @@ const App: React.FC = () => {
                     placeholder="Search games..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-4 pl-12 pr-4 text-sm font-medium focus:outline-none focus:border-red-600/50 focus:bg-white transition-all placeholder:text-slate-400 text-slate-900"
+                    className="w-full bg-[#FAF9F6] border border-slate-200 rounded-2xl py-4 pl-12 pr-4 text-sm font-medium focus:outline-none focus:border-red-600/50 focus:bg-[#FAF9F6] transition-all placeholder:text-slate-400 text-slate-900"
                   />
                 </div>
               </div>
@@ -265,7 +289,7 @@ const App: React.FC = () => {
                   ))}
                 </div>
               ) : (
-                <div className="py-20 text-center bg-white rounded-3xl border border-black/5 shadow-sm">
+                <div className="py-20 text-center bg-[#FAF9F6] rounded-3xl border border-black/5 shadow-sm">
                   <div className="text-5xl mb-4 opacity-20">🔍</div>
                   <h3 className="text-xl font-bold mb-2 text-slate-900">No missions found</h3>
                   <p className="text-slate-400 text-sm">Clear your search parameters to find results.</p>
@@ -273,7 +297,7 @@ const App: React.FC = () => {
               )}
             </section>
 
-            <section className="py-24 border-t border-slate-100">
+            <section className="py-24 border-t border-[#FAF9F6]">
               <div className="max-w-7xl mx-auto px-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                    {[
@@ -281,7 +305,7 @@ const App: React.FC = () => {
                      { title: "Security Node", desc: "Every packet of data is encrypted via Gold Shield protocols.", icon: "🛡️" },
                      { title: "Elite Ops Support", desc: "Human-led support available 24/7 for all tactical queries.", icon: "🔴" }
                    ].map((feature, i) => (
-                     <div key={i} className="group p-8 bg-white/40 backdrop-blur-md rounded-3xl border border-slate-200 hover:border-red-600/30 transition-all cursor-pointer shadow-sm hover:shadow-xl" onClick={() => setIsSupportOpen(true)}>
+                     <div key={i} className="group p-8 bg-[#FAF9F6]/40 backdrop-blur-md rounded-3xl border border-slate-200 hover:border-red-600/30 transition-all cursor-pointer shadow-sm hover:shadow-xl" onClick={() => setIsSupportOpen(true)}>
                         <div className="text-5xl mb-6 group-hover:scale-110 transition-transform">{feature.icon}</div>
                         <h4 className="text-xl font-bold mb-3 text-slate-900 group-hover:text-red-600 transition-colors">{feature.title}</h4>
                         <p className="text-slate-500 text-sm leading-relaxed">{feature.desc}</p>

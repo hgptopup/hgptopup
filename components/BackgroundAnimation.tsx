@@ -131,7 +131,7 @@ const BackgroundAnimation: React.FC = () => {
   }, []);
 
   return (
-    <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10 bg-white">
+    <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10 bg-[#FAF9F6]">
       {shapes.map((shape) => (
         <Shape key={shape.id} {...shape} />
       ))}

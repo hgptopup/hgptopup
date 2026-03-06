@@ -7,7 +7,7 @@ const SplashScreen: React.FC = () => {
       initial={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.8, ease: "easeInOut" }}
-      className="fixed inset-0 z-[9999] bg-white flex items-center justify-center overflow-hidden"
+      className="fixed inset-0 z-[9999] bg-[#FAF9F6] flex items-center justify-center overflow-hidden"
     >
       {/* Background Glow */}
       <div 
@@ -55,7 +55,7 @@ const SplashScreen: React.FC = () => {
           className="mb-8"
         >
           <div className="w-24 h-24 bg-red-600 rounded-3xl flex items-center justify-center shadow-[0_0_30px_rgba(220,38,38,0.2)] relative group">
-            <span className="text-4xl font-display font-black text-white italic tracking-tighter">HGP</span>
+            <span className="text-4xl font-display font-black text-[#FAF9F6] italic tracking-tighter">HGP</span>
             <div className="absolute inset-0 rounded-3xl border-2 border-red-600/20 animate-ping opacity-20" />
           </div>
         </motion.div>
@@ -108,7 +108,7 @@ const SplashScreen: React.FC = () => {
           initial={{ opacity: 0, width: 0 }}
           animate={{ opacity: 1, width: "100%" }}
           transition={{ duration: 0.8, delay: 0.5, ease: "easeInOut" }}
-          className="mt-6 h-[2px] bg-slate-100 relative overflow-hidden max-w-[200px]"
+          className="mt-6 h-[2px] bg-[#FAF9F6] relative overflow-hidden max-w-[200px]"
         >
           <motion.div 
             initial={{ x: "-100%" }}

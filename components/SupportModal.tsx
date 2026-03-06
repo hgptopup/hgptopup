@@ -67,17 +67,17 @@ const SupportModal: React.FC<SupportModalProps> = ({ isOpen, onClose }) => {
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="fixed inset-0 m-auto w-full max-w-lg h-fit bg-[#0B0B0F]/90 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] z-[110] overflow-hidden shadow-2xl"
+            className="fixed inset-0 m-auto w-full max-w-lg h-fit bg-[#0B0B0F]/90 backdrop-blur-2xl border border-[#FAF9F6]/10 rounded-[2.5rem] z-[110] overflow-hidden shadow-2xl"
           >
             <div className="p-8 md:p-10">
               <div className="flex justify-between items-start mb-8">
                 <div>
-                  <h2 className="text-3xl font-display font-bold mb-2 text-white">
+                  <h2 className="text-3xl font-display font-bold mb-2 text-[#FAF9F6]">
                     Hasibul <span className="text-red-600">Game Point</span>
                   </h2>
                   <p className="text-[#00B2FF] text-sm font-medium">Connect directly with our HGP operators.</p>
                 </div>
-                <button onClick={onClose} className="p-3 hover:bg-white/5 rounded-2xl transition-colors text-white">
+                <button onClick={onClose} className="p-3 hover:bg-[#FAF9F6]/5 rounded-2xl transition-colors text-[#FAF9F6]">
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
@@ -94,19 +94,19 @@ const SupportModal: React.FC<SupportModalProps> = ({ isOpen, onClose }) => {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.1 }}
-                    className={`group block bg-white/5 p-6 rounded-3xl border border-white/5 ${channel.borderColor} ${channel.color} transition-all shadow-xl ${channel.glowColor}`}
+                    className={`group block bg-[#FAF9F6]/5 p-6 rounded-3xl border border-[#FAF9F6]/5 ${channel.borderColor} ${channel.color} transition-all shadow-xl ${channel.glowColor}`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-5">
-                        <div className={`w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform ${channel.iconColor}`}>
+                        <div className={`w-12 h-12 bg-[#FAF9F6]/5 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform ${channel.iconColor}`}>
                           {channel.icon}
                         </div>
                         <div>
-                          <h4 className="text-lg font-bold text-white group-hover:text-inherit transition-colors">{channel.name}</h4>
+                          <h4 className="text-lg font-bold text-[#FAF9F6] group-hover:text-inherit transition-colors">{channel.name}</h4>
                           <p className={`text-[10px] font-bold uppercase tracking-widest ${channel.iconColor} opacity-80`}>{channel.handle}</p>
                         </div>
                       </div>
-                      <div className="p-2 opacity-0 group-hover:opacity-100 transition-opacity text-white">
+                      <div className="p-2 opacity-0 group-hover:opacity-100 transition-opacity text-[#FAF9F6]">
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                         </svg>
@@ -116,8 +116,8 @@ const SupportModal: React.FC<SupportModalProps> = ({ isOpen, onClose }) => {
                 ))}
               </div>
 
-              <div className="mt-10 pt-8 border-t border-white/5 text-center">
-                <p className="text-[10px] font-bold text-white uppercase tracking-[0.3em]">Operational 24/7 • Gold Shield Verified</p>
+              <div className="mt-10 pt-8 border-t border-[#FAF9F6]/5 text-center">
+                <p className="text-[10px] font-bold text-[#FAF9F6] uppercase tracking-[0.3em]">Operational 24/7 • Gold Shield Verified</p>
               </div>
             </div>
           </motion.div>

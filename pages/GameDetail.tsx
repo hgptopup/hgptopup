@@ -173,7 +173,7 @@ const GameDetail: React.FC<GameDetailProps> = ({ game, onBack, onOpenAuth }) => 
   };
 
   return (
-    <div className="min-h-screen pt-24 pb-20 bg-slate-50">
+    <div className="min-h-screen pt-24 pb-32 md:pb-20 bg-[#FAF9F6]">
       <div className="max-w-6xl mx-auto px-6">
         <button onClick={onBack} className="flex items-center space-x-2 text-slate-500 hover:text-red-600 mb-8 transition-colors group">
           <svg className="w-5 h-5 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -188,7 +188,7 @@ const GameDetail: React.FC<GameDetailProps> = ({ game, onBack, onOpenAuth }) => 
             <motion.div 
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="bg-white rounded-lg overflow-hidden border-2 border-red-600 shadow-[0_0_15px_rgba(220,38,38,0.3)] sticky top-32"
+              className="bg-[#FAF9F6] rounded-lg overflow-hidden border-2 border-red-600 shadow-[0_0_15px_rgba(220,38,38,0.3)] sticky top-32"
             >
               <div className="relative aspect-[4/5]">
                 <img src={game.image} className="w-full h-full object-cover" alt={game.title} />
@@ -206,9 +206,9 @@ const GameDetail: React.FC<GameDetailProps> = ({ game, onBack, onOpenAuth }) => 
 
           {/* Form Area */}
           <div className="md:col-span-2 space-y-8">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-6 sm:p-8 rounded-lg border-2 border-red-600 shadow-[0_0_15px_rgba(220,38,38,0.3)]">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-[#FAF9F6] p-6 sm:p-8 rounded-lg border-2 border-red-600 shadow-[0_0_15px_rgba(220,38,38,0.3)]">
               <div className="flex items-center gap-4 mb-8">
-                <div className="w-10 h-10 bg-red-600 text-white rounded-xl flex items-center justify-center font-display font-bold text-lg shadow-lg shadow-red-600/20">1</div>
+                <div className="w-10 h-10 bg-red-600 text-[#FAF9F6] rounded-xl flex items-center justify-center font-display font-bold text-lg shadow-lg shadow-red-600/20">1</div>
                 <h2 className="text-xl font-bold text-slate-900">Verification Intel</h2>
               </div>
               
@@ -224,7 +224,7 @@ const GameDetail: React.FC<GameDetailProps> = ({ game, onBack, onOpenAuth }) => 
                         setWhatsapp('');
                         setErrors({});
                     }}
-                    className="w-full bg-white border border-black/10 rounded-2xl py-4 px-5 text-sm font-bold focus:outline-none focus:border-red-600 transition-all text-slate-900 cursor-pointer"
+                    className="w-full bg-[#FAF9F6] border border-black/10 rounded-2xl py-4 px-5 text-sm font-bold focus:outline-none focus:border-red-600 transition-all text-slate-900 cursor-pointer"
                   >
                     {LOGIN_METHODS.map((method) => (
                       <option key={method.id} value={method.id}>{method.label}</option>
@@ -242,7 +242,7 @@ const GameDetail: React.FC<GameDetailProps> = ({ game, onBack, onOpenAuth }) => 
                       placeholder={`Enter ${currentMethod.fieldLabel.toLowerCase()}...`}
                       value={accountIdentifier}
                       onChange={(e) => handleInputChange('identifier', e.target.value, setAccountIdentifier)}
-                      className={`w-full bg-slate-50 border rounded-2xl py-4 px-5 text-sm font-medium focus:outline-none transition-all text-slate-900 ${errors.identifier ? 'border-red-600 bg-red-600/5' : 'border-black/10 focus:border-red-600'}`}
+                      className={`w-full bg-[#FAF9F6] border rounded-2xl py-4 px-5 text-sm font-medium focus:outline-none transition-all text-slate-900 ${errors.identifier ? 'border-red-600 bg-red-600/5' : 'border-black/10 focus:border-red-600'}`}
                     />
                     {errors.identifier && (
                       <p className="text-[10px] text-red-600 font-bold mt-2 ml-1 uppercase tracking-wider">{errors.identifier}</p>
@@ -257,7 +257,7 @@ const GameDetail: React.FC<GameDetailProps> = ({ game, onBack, onOpenAuth }) => 
                         placeholder="••••••••"
                         value={password}
                         onChange={(e) => handleInputChange('password', e.target.value, setPassword)}
-                        className={`w-full bg-slate-50 border rounded-2xl py-4 px-5 text-sm font-medium focus:outline-none transition-all text-slate-900 ${errors.password ? 'border-red-600 bg-red-600/5' : 'border-black/10 focus:border-red-600'}`}
+                        className={`w-full bg-[#FAF9F6] border rounded-2xl py-4 px-5 text-sm font-medium focus:outline-none transition-all text-slate-900 ${errors.password ? 'border-red-600 bg-red-600/5' : 'border-black/10 focus:border-red-600'}`}
                       />
                       {errors.password && (
                         <p className="text-[10px] text-red-600 font-bold mt-2 ml-1 uppercase tracking-wider">{errors.password}</p>
@@ -273,7 +273,7 @@ const GameDetail: React.FC<GameDetailProps> = ({ game, onBack, onOpenAuth }) => 
                         placeholder="01XXXXXXXXX"
                         value={whatsapp}
                         onChange={(e) => handleInputChange('whatsapp', e.target.value, setWhatsapp)}
-                        className={`w-full bg-slate-50 border rounded-2xl py-4 px-5 text-sm font-medium focus:outline-none transition-all text-slate-900 ${errors.whatsapp ? 'border-red-600 bg-red-600/5' : 'border-black/10 focus:border-red-600'}`}
+                        className={`w-full bg-[#FAF9F6] border rounded-2xl py-4 px-5 text-sm font-medium focus:outline-none transition-all text-slate-900 ${errors.whatsapp ? 'border-red-600 bg-red-600/5' : 'border-black/10 focus:border-red-600'}`}
                       />
                       {errors.whatsapp && (
                         <p className="text-[10px] text-red-600 font-bold mt-2 ml-1 uppercase tracking-wider">{errors.whatsapp}</p>
@@ -285,9 +285,9 @@ const GameDetail: React.FC<GameDetailProps> = ({ game, onBack, onOpenAuth }) => 
             </motion.div>
 
             {/* Step 2: Select Package */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-6 sm:p-8 rounded-lg border-2 border-red-600 shadow-[0_0_15px_rgba(220,38,38,0.3)]">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-[#FAF9F6] p-6 sm:p-8 rounded-lg border-2 border-red-600 shadow-[0_0_15px_rgba(220,38,38,0.3)]">
               <div className="flex items-center gap-4 mb-8">
-                <div className="w-10 h-10 bg-red-600 text-white rounded-xl flex items-center justify-center font-display font-bold text-lg shadow-lg shadow-red-600/20">2</div>
+                <div className="w-10 h-10 bg-red-600 text-[#FAF9F6] rounded-xl flex items-center justify-center font-display font-bold text-lg shadow-lg shadow-red-600/20">2</div>
                 <h2 className="text-xl font-bold text-slate-900">Select Package</h2>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
@@ -303,8 +303,13 @@ const GameDetail: React.FC<GameDetailProps> = ({ game, onBack, onOpenAuth }) => 
                           return next;
                         });
                       }
+                      // Automatically scroll to or show the checkout area
+                      const checkoutArea = document.getElementById('checkout-area');
+                      if (checkoutArea) {
+                        checkoutArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }
                     }}
-                    className={`p-5 rounded-2xl border transition-all text-left ${selectedPackage?.id === pkg.id ? 'bg-red-600/10 border-red-600' : 'bg-slate-50 border-black/5 hover:border-black/10'}`}
+                    className={`p-5 rounded-2xl border transition-all text-left ${selectedPackage?.id === pkg.id ? 'bg-red-600/10 border-red-600' : 'bg-[#FAF9F6] border-black/5 hover:border-black/10'}`}
                   >
                     <div className="text-xl font-display font-bold mb-1 text-slate-900">{pkg.amount}</div>
                     <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">{pkg.unit}</div>
@@ -318,36 +323,44 @@ const GameDetail: React.FC<GameDetailProps> = ({ game, onBack, onOpenAuth }) => 
             </motion.div>
 
             {/* Checkout Area */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-6 sm:p-8 rounded-lg border-2 border-red-600 shadow-[0_0_15px_rgba(220,38,38,0.3)]">
-              <AnimatePresence mode="wait">
-                {showSuccess ? (
-                  <motion.div 
-                    key="success-message"
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="flex flex-col items-center justify-center text-center py-10"
-                  >
-                    <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mb-6 border border-green-500/30">
-                      <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                      </svg>
-                    </div>
-                    <h3 className="text-2xl font-display font-bold mb-2 text-slate-900">Order Successful</h3>
-                    <p className="text-slate-500 text-sm mb-8 px-6 font-medium leading-relaxed">
-                      We have received your payment intel. Deployment usually starts within 5-30 minutes. You can track this in your profile history.
-                    </p>
-                    <button onClick={onBack} className="w-full py-4 bg-green-600 hover:bg-green-700 text-white font-bold rounded-2xl transition-all shadow-xl shadow-green-600/20 uppercase tracking-widest text-xs">Return to Arena</button>
-                  </motion.div>
-                ) : !showPayment ? (
-                  <div className="flex flex-col sm:flex-row gap-4">
-                    <button onClick={handleAddToCart} className="flex-1 py-4 bg-slate-50 border border-black/10 rounded-2xl font-bold hover:bg-slate-100 text-slate-900 transition-all uppercase tracking-widest text-xs">Add to Cart</button>
-                    <button onClick={handleBuyNow} className="flex-1 py-4 bg-red-600 rounded-2xl font-bold hover:bg-red-700 text-white shadow-xl shadow-red-600/20 transition-all uppercase tracking-widest text-xs">Buy Now</button>
-                  </div>
-                ) : (
-                  <div className="space-y-6">
-                    <div className="text-center space-y-4">
-                      <button 
-                        onClick={() => setShowPayment(false)}
+            <AnimatePresence>
+              {selectedPackage && (
+                <motion.div 
+                  id="checkout-area"
+                  initial={{ opacity: 0, y: 20, height: 0 }} 
+                  animate={{ opacity: 1, y: 0, height: 'auto' }} 
+                  exit={{ opacity: 0, y: 20, height: 0 }}
+                  className="bg-[#FAF9F6] p-6 sm:p-8 rounded-lg border-2 border-red-600 shadow-[0_0_15px_rgba(220,38,38,0.3)] overflow-hidden"
+                >
+                  <AnimatePresence mode="wait">
+                    {showSuccess ? (
+                      <motion.div 
+                        key="success-message"
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="flex flex-col items-center justify-center text-center py-10"
+                      >
+                        <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mb-6 border border-green-500/30">
+                          <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                        <h3 className="text-2xl font-display font-bold mb-2 text-slate-900">Order Successful</h3>
+                        <p className="text-slate-500 text-sm mb-8 px-6 font-medium leading-relaxed">
+                          We have received your payment intel. Deployment usually starts within 5-30 minutes. You can track this in your profile history.
+                        </p>
+                        <button onClick={onBack} className="w-full py-4 bg-green-600 hover:bg-green-700 text-[#FAF9F6] font-bold rounded-2xl transition-all shadow-xl shadow-green-600/20 uppercase tracking-widest text-xs">Return to Arena</button>
+                      </motion.div>
+                    ) : !showPayment ? (
+                      <div className="flex flex-col sm:flex-row gap-4">
+                        <button onClick={handleAddToCart} className="flex-1 py-4 bg-[#FAF9F6] border border-black/10 rounded-2xl font-bold hover:bg-[#F0F0F0] text-slate-900 transition-all uppercase tracking-widest text-xs">Add to Cart</button>
+                        <button onClick={handleBuyNow} className="flex-1 py-4 bg-red-600 rounded-2xl font-bold hover:bg-red-700 text-[#FAF9F6] shadow-xl shadow-red-600/20 transition-all uppercase tracking-widest text-xs">Buy Now</button>
+                      </div>
+                    ) : (
+                      <div className="space-y-6">
+                        <div className="text-center space-y-4">
+                          <button 
+                            onClick={() => setShowPayment(false)}
                         className="text-xs font-bold text-red-600 uppercase tracking-widest flex items-center gap-2 hover:text-red-700 transition-colors mb-4"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -363,8 +376,8 @@ const GameDetail: React.FC<GameDetailProps> = ({ game, onBack, onOpenAuth }) => 
                             onClick={() => setPaymentMethod(method)}
                             className={`p-3 rounded-xl border transition-all text-xs font-bold ${
                               paymentMethod === method 
-                                ? 'bg-red-600 border-red-600 text-white' 
-                                : 'bg-slate-50 border-black/10 text-slate-500 hover:border-black/20'
+                                ? 'bg-red-600 border-red-600 text-[#FAF9F6]' 
+                                : 'bg-[#FAF9F6] border-black/10 text-slate-500 hover:border-black/20'
                             }`}
                           >
                             {method}
@@ -376,7 +389,7 @@ const GameDetail: React.FC<GameDetailProps> = ({ game, onBack, onOpenAuth }) => 
                         <motion.div 
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
-                          className="glass p-6 rounded-2xl border border-black/10 space-y-4 text-left"
+                          className="bg-white p-6 rounded-2xl border border-black/10 space-y-4 text-left shadow-sm"
                         >
                           <div className="flex justify-between items-center">
                             <span className="text-xs text-slate-400 uppercase tracking-widest font-bold">Send Money to:</span>
@@ -384,7 +397,7 @@ const GameDetail: React.FC<GameDetailProps> = ({ game, onBack, onOpenAuth }) => 
                               <span className="text-sm font-mono text-slate-900 font-bold">{paymentNumbers[paymentMethod]}</span>
                               <button 
                                 onClick={() => copyToClipboard(paymentNumbers[paymentMethod])}
-                                className="p-1.5 bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors text-red-600"
+                                className="p-1.5 bg-[#FAF9F6] hover:bg-[#F0F0F0] rounded-lg transition-colors text-red-600"
                                 title="Copy Number"
                               >
                                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -400,13 +413,13 @@ const GameDetail: React.FC<GameDetailProps> = ({ game, onBack, onOpenAuth }) => 
                               value={transactionId}
                               onChange={(e) => setTransactionId(e.target.value)}
                               placeholder="Enter TrxID after payment"
-                              className="w-full bg-slate-50 border border-black/10 rounded-xl py-4 px-5 text-sm focus:outline-none focus:border-red-600 transition-all text-slate-900 font-mono"
+                              className="w-full bg-[#FAF9F6] border border-black/10 rounded-xl py-4 px-5 text-sm focus:outline-none focus:border-red-600 transition-all text-slate-900 font-mono"
                             />
                           </div>
                         </motion.div>
                       )}
 
-                      <div className="glass p-6 rounded-2xl border border-black/5 text-center space-y-2">
+                      <div className="bg-white p-6 rounded-2xl border border-black/5 text-center space-y-2 shadow-sm">
                         <h3 className="text-lg font-bold text-slate-900">Manual Verification</h3>
                         <p className="text-slate-500 text-xs leading-relaxed">
                           Please send ৳{selectedPackage?.price} to the number above and provide the Transaction ID.
@@ -414,9 +427,9 @@ const GameDetail: React.FC<GameDetailProps> = ({ game, onBack, onOpenAuth }) => 
                       </div>
                     </div>
 
-                    <button disabled={isProcessingOrder} onClick={handleSubmitOrder} className="w-full py-5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-2xl transition-all shadow-xl shadow-red-600/20 flex items-center justify-center gap-3 uppercase tracking-widest text-xs">
+                    <button disabled={isProcessingOrder} onClick={handleSubmitOrder} className="w-full py-5 bg-red-600 hover:bg-red-700 text-[#FAF9F6] font-bold rounded-2xl transition-all shadow-xl shadow-red-600/20 flex items-center justify-center gap-3 uppercase tracking-widest text-xs">
                       {isProcessingOrder ? (
-                        <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
+                        <div className="animate-spin h-5 w-5 border-2 border-[#FAF9F6] border-t-transparent rounded-full" />
                       ) : (
                         <>
                           <span>Submit Order</span>
@@ -429,7 +442,9 @@ const GameDetail: React.FC<GameDetailProps> = ({ game, onBack, onOpenAuth }) => 
                   </div>
                 )}
               </AnimatePresence>
-            </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </div>

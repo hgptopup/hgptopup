@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 
 const Joystick3D: React.FC = () => {
+  const [isClicked, setIsClicked] = useState(false);
   const x = useMotionValue(0);
   const y = useMotionValue(0);
 
-  const springConfig = { damping: 20, stiffness: 150 };
-  const rotateX = useSpring(useTransform(y, [-100, 100], [30, -30]), springConfig);
-  const rotateY = useSpring(useTransform(x, [-100, 100], [-30, 30]), springConfig);
+  const springConfig = isClicked ? { damping: 10, stiffness: 500 } : { damping: 15, stiffness: 300 };
+  const rotateX = useSpring(useTransform(y, [-100, 100], [45, -45]), springConfig);
+  const rotateY = useSpring(useTransform(x, [-100, 100], [-45, 45]), springConfig);
   
   const handleMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -20,6 +21,7 @@ const Joystick3D: React.FC = () => {
   const handleMouseLeave = () => {
     x.set(0);
     y.set(0);
+    setIsClicked(false);
   };
 
   return (
@@ -27,9 +29,11 @@ const Joystick3D: React.FC = () => {
       className="relative w-64 h-64 flex items-center justify-center perspective-1000"
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
+      onMouseDown={() => setIsClicked(true)}
+      onMouseUp={() => setIsClicked(false)}
     >
       {/* Base of the joystick */}
-      <div className="absolute w-48 h-48 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 border-4 border-red-600/20 shadow-[0_0_50px_rgba(220,38,38,0.1)]" />
+      <div className="absolute w-48 h-48 rounded-full bg-gradient-to-br from-[#FAF9F6] to-[#F0F0F0] border-4 border-red-600/20 shadow-[0_0_50px_rgba(220,38,38,0.1)]" />
       
       {/* The Stick */}
       <motion.div
@@ -52,7 +56,7 @@ const Joystick3D: React.FC = () => {
           style={{ translateZ: 40 }}
         >
           {/* Inner glow */}
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.2),transparent)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(250,249,246,0.2),transparent)]" />
           
           {/* Neon Ring */}
           <div className="w-12 h-12 rounded-full border border-red-400/30 animate-pulse" />

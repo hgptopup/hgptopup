@@ -79,7 +79,7 @@ const Hero: React.FC = () => {
           transition={{ duration: 0.8 }}
           className="order-2 lg:order-1"
         >
-          <div className="inline-flex items-center space-x-2 px-4 py-2 bg-slate-50 border border-red-600/20 rounded-full text-red-600 font-bold text-[10px] mb-8 uppercase tracking-[0.2em] shadow-sm">
+          <div className="inline-flex items-center space-x-2 px-4 py-2 bg-[#FAF9F6] border border-red-600/20 rounded-full text-red-600 font-bold text-[10px] mb-8 uppercase tracking-[0.2em] shadow-sm">
             <span className="flex h-2 w-2 rounded-full bg-red-600 animate-ping"></span>
             <span>Neural Network Online</span>
           </div>
@@ -136,7 +136,7 @@ const Hero: React.FC = () => {
                       ease: "easeInOut",
                       delay: (Number(icon.delay) || 0) + (idx * 0.2)
                     }}
-                    className={`absolute ${positionClasses[icon.position || 'top-right']} w-16 h-16 md:w-20 md:h-20 bg-white/40 backdrop-blur-md rounded-2xl border border-slate-200 flex items-center justify-center shadow-xl z-20`}
+                    className={`absolute ${positionClasses[icon.position || 'top-right']} w-16 h-16 md:w-20 md:h-20 bg-[#FAF9F6]/40 backdrop-blur-md rounded-2xl border border-slate-200 flex items-center justify-center shadow-xl z-20`}
                   >
                     <div className="text-2xl md:text-3xl">
                       {icon.icon.startsWith('http') || icon.icon.startsWith('data:image/') ? (
@@ -158,7 +158,7 @@ const Hero: React.FC = () => {
                 <motion.div 
                   animate={{ y: [0, -20, 0] }}
                   transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                  className="absolute -top-4 -right-4 md:-top-10 md:-right-10 w-16 h-16 md:w-24 md:h-24 bg-white/40 backdrop-blur-md rounded-2xl border border-slate-200 flex items-center justify-center shadow-xl"
+                  className="absolute -top-4 -right-4 md:-top-10 md:-right-10 w-16 h-16 md:w-24 md:h-24 bg-[#FAF9F6]/40 backdrop-blur-md rounded-2xl border border-slate-200 flex items-center justify-center shadow-xl"
                 >
                   <div className="text-2xl md:text-3xl">💎</div>
                 </motion.div>
@@ -166,7 +166,7 @@ const Hero: React.FC = () => {
                 <motion.div 
                   animate={{ y: [0, 20, 0] }}
                   transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-                  className="absolute -bottom-4 -left-4 md:-bottom-10 md:-left-10 w-16 h-16 md:w-24 md:h-24 bg-white/40 backdrop-blur-md rounded-2xl border border-slate-200 flex items-center justify-center shadow-xl"
+                  className="absolute -bottom-4 -left-4 md:-bottom-10 md:-left-10 w-16 h-16 md:w-24 md:h-24 bg-[#FAF9F6]/40 backdrop-blur-md rounded-2xl border border-slate-200 flex items-center justify-center shadow-xl"
                 >
                   <div className="text-2xl md:text-3xl">🎮</div>
                 </motion.div>

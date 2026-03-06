@@ -88,19 +88,19 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onAuthSuccess })
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 bg-white/80 backdrop-blur-xl"
+            className="absolute inset-0 bg-[#FAF9F6]/80 backdrop-blur-xl"
           />
           
           <motion.div
             initial={{ scale: 0.9, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.9, opacity: 0, y: 20 }}
-            className="w-full max-w-md bg-white border border-slate-200 rounded-[2.5rem] p-8 md:p-10 relative z-10 shadow-2xl overflow-hidden"
+            className="w-full max-w-md bg-[#FAF9F6] border border-slate-200 rounded-[2.5rem] p-8 md:p-10 relative z-10 shadow-2xl overflow-hidden"
           >
             <div className="absolute top-0 right-0 w-40 h-40 bg-red-600/5 rounded-full blur-[80px] -mr-20 -mt-20"></div>
 
             <div className="text-center mb-10">
-              <div className="w-20 h-16 bg-red-600 rounded-2xl flex items-center justify-center font-display font-bold text-2xl mx-auto mb-6 shadow-lg px-2 text-white">
+              <div className="w-20 h-16 bg-red-600 rounded-2xl flex items-center justify-center font-display font-bold text-2xl mx-auto mb-6 shadow-lg px-2 text-[#FAF9F6]">
                 HGP
               </div>
               <h2 className="text-3xl font-display font-bold mb-2 text-slate-900">
@@ -137,7 +137,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onAuthSuccess })
                       placeholder="Enter your name"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-4 px-5 text-sm focus:outline-none focus:border-red-600 focus:bg-white transition-all text-slate-900"
+                      className="w-full bg-[#FAF9F6] border border-slate-200 rounded-2xl py-4 px-5 text-sm focus:outline-none focus:border-red-600 focus:bg-[#FAF9F6] transition-all text-slate-900"
                     />
                   </motion.div>
                 )}
@@ -151,7 +151,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onAuthSuccess })
                   placeholder="player@gmail.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-4 px-5 text-sm focus:outline-none focus:border-red-600 focus:bg-white transition-all text-slate-900"
+                  className="w-full bg-[#FAF9F6] border border-slate-200 rounded-2xl py-4 px-5 text-sm focus:outline-none focus:border-red-600 focus:bg-[#FAF9F6] transition-all text-slate-900"
                 />
               </motion.div>
 
@@ -163,7 +163,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onAuthSuccess })
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-4 px-5 text-sm focus:outline-none focus:border-red-600 focus:bg-white transition-all text-slate-900"
+                  className="w-full bg-[#FAF9F6] border border-slate-200 rounded-2xl py-4 px-5 text-sm focus:outline-none focus:border-red-600 focus:bg-[#FAF9F6] transition-all text-slate-900"
                 />
               </motion.div>
 
@@ -173,7 +173,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onAuthSuccess })
                 disabled={loading}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="w-full py-4 bg-red-600 hover:bg-red-700 text-white font-bold rounded-2xl shadow-xl shadow-red-600/20 transition-all flex items-center justify-center gap-3 mt-6"
+                className="w-full py-4 bg-red-600 hover:bg-red-700 text-[#FAF9F6] font-bold rounded-2xl shadow-xl shadow-red-600/20 transition-all flex items-center justify-center gap-3 mt-6"
               >
                 {loading ? (
                   <div className="animate-spin h-5 w-5 border-2 border-black/30 border-t-black rounded-full"></div>
