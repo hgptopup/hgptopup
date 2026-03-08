@@ -303,15 +303,15 @@ export const useStore = create<AppState>((set, get) => ({
 
     console.log("HGP DEBUG: Saving order to Supabase...", order.id);
     
-    // Insert into DB - Removed payment_method and transaction_id to avoid PGRST204 error
-    // since these columns are missing in the user's Supabase schema.
+    // Insert into DB
     const { error: dbError } = await supabase.from('orders').insert([{
       id: order.id,
       user_id: user.id,
       items: order.items,
       total_amount: order.totalAmount,
-      status: order.status
-      // transaction_id and payment_method removed from here
+      status: order.status,
+      transaction_id: order.transactionId,
+      payment_method: order.paymentMethod
     }]);
 
     if (dbError) {

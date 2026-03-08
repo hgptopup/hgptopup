@@ -253,7 +253,7 @@ const Profile: React.FC<ProfileProps> = ({ onBack, onOpenAdmin }) => {
                   {selectedOrder.items && selectedOrder.items.length > 0 ? (
                     selectedOrder.items.map((item, idx) => (
                       <div key={idx} className="bg-white p-4 rounded-2xl border border-black/5 flex items-center gap-4 shadow-sm">
-                        <img src={item.image} className="w-12 h-12 rounded-lg object-cover" alt={item.gameTitle} />
+                        <img src={item.image} className="w-12 h-12 rounded-lg object-cover" alt={item.gameTitle} referrerPolicy="no-referrer" />
                         <div className="flex-1">
                           <p className="text-sm font-bold text-slate-900">{item.gameTitle}</p>
                           <p className="text-xs text-slate-500">{item.packageName}</p>

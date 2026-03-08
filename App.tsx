@@ -16,7 +16,8 @@ import SupportModal from './components/SupportModal';
 import AuthModal from './components/AuthModal';
 import SplashScreen from './components/SplashScreen';
 import BackgroundAnimation from './components/BackgroundAnimation';
-import { Game } from './types';
+import PopupModal from './components/PopupModal';
+import { Game, PopupOption } from './types';
 import { useStore } from './store/useStore';
 import { supabase } from './services/supabaseClient';
 import { GAMES as INITIAL_GAMES } from './constants';
@@ -33,16 +34,33 @@ const App: React.FC = () => {
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [popupOptions, setPopupOptions] = useState<PopupOption[] | null>(null);
+  const [popupSourceGame, setPopupSourceGame] = useState<Game | null>(null);
   
   const { setSession, isAuthenticated, isAdmin, games, fetchGames, logout, user, fetchOrders, setJustCompletedOrder } = useStore();
 
   useEffect(() => {
     fetchGames();
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session?.user ?? null);
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        console.error("Session error:", error.message);
+        supabase.auth.signOut();
+        setSession(null);
+      } else {
+        setSession(session?.user ?? null);
+      }
+    }).catch(err => {
+      console.error("Failed to get session:", err);
+      setSession(null);
     });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session?.user ?? null);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') {
+        setSession(session?.user ?? null);
+      } else if (event === 'SIGNED_OUT') {
+        setSession(null);
+      } else {
+        setSession(session?.user ?? null);
+      }
     });
 
     // Splash screen timer
@@ -156,11 +174,60 @@ const App: React.FC = () => {
     return games.length > 0 ? games : INITIAL_GAMES;
   }, [games]);
 
+  const popupTargetIds = useMemo(() => {
+    const ids = new Set<string>();
+    activeGames.forEach(game => {
+      game.packages?.forEach(pkg => {
+        if ('isPopupOption' in pkg && pkg.isPopupOption && pkg.targetGameId) {
+          ids.add(pkg.targetGameId);
+        }
+      });
+    });
+    return ids;
+  }, [activeGames]);
+
   const filteredGames = useMemo(() => {
     return activeGames.filter(game => 
-      game.title.toLowerCase().includes(searchQuery.toLowerCase())
+      !popupTargetIds.has(game.id) && game.title.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [searchQuery, activeGames]);
+  }, [searchQuery, activeGames, popupTargetIds]);
+
+  const handleGameClick = (game: Game) => {
+    const options = game.packages?.filter(pkg => 'isPopupOption' in pkg && pkg.isPopupOption) as PopupOption[];
+    if (options && options.length > 0) {
+      setPopupSourceGame(game);
+      setPopupOptions(options);
+    } else {
+      setSelectedGame(game);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handlePopupSelect = (targetGameId: string) => {
+    const option = popupOptions?.find(opt => opt.targetGameId === targetGameId || opt.id === targetGameId);
+    
+    if (option && option.packages && option.packages.length > 0 && popupSourceGame) {
+      // It has its own price list!
+      const dynamicGame: Game = {
+        ...popupSourceGame,
+        id: option.id,
+        image: option.image || popupSourceGame.image,
+        packages: option.packages,
+      };
+      setPopupOptions(null);
+      setSelectedGame(dynamicGame);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      // Fallback to targetGameId
+      const targetGame = activeGames.find(g => g.id === targetGameId || g.title.toLowerCase() === targetGameId.toLowerCase());
+      if (targetGame) {
+        setPopupOptions(null);
+        handleGameClick(targetGame);
+      } else {
+        alert("Target shop not found!");
+      }
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#FAF9F6] text-slate-900 overflow-x-hidden">
@@ -185,6 +252,13 @@ const App: React.FC = () => {
         isOpen={isAuthModalOpen} 
         onClose={() => setIsAuthModalOpen(false)} 
         onAuthSuccess={handleGoHome} 
+      />
+
+      <PopupModal
+        isOpen={!!popupOptions}
+        onClose={() => setPopupOptions(null)}
+        options={popupOptions || []}
+        onSelectOption={handlePopupSelect}
       />
 
       <AnimatePresence mode="wait">
@@ -280,10 +354,7 @@ const App: React.FC = () => {
                     >
                       <GameCard 
                         game={game} 
-                        onClick={() => {
-                          setSelectedGame(game);
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }} 
+                        onClick={() => handleGameClick(game)} 
                       />
                     </motion.div>
                   ))}

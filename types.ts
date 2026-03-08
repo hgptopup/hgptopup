@@ -11,11 +11,20 @@ export interface User {
 
 export interface GamePackage {
   id: string;
-  amount: number;
+  amount: string | number;
   unit: string;
   price: number;
   bonus?: string;
   popular?: boolean;
+}
+
+export interface PopupOption {
+  id: string;
+  isPopupOption: true;
+  targetGameId?: string;
+  title: string;
+  image: string;
+  packages?: GamePackage[];
 }
 
 export interface Game {
@@ -25,8 +34,9 @@ export interface Game {
   description: string;
   image: string;
   banner: string;
-  packages: GamePackage[];
+  packages: (GamePackage | PopupOption)[];
   featured?: boolean;
+  loginMethods?: string[];
 }
 
 export interface CartItem {

@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS public.games (
   banner TEXT,
   packages JSONB NOT NULL DEFAULT '[]'::jsonb,
   featured BOOLEAN DEFAULT false,
+  "loginMethods" JSONB DEFAULT '[]'::jsonb,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -32,6 +33,8 @@ CREATE TABLE IF NOT EXISTS public.orders (
   items JSONB NOT NULL DEFAULT '[]'::jsonb,
   total_amount NUMERIC NOT NULL,
   status TEXT DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'COMPLETED', 'CANCELLED')),
+  transaction_id TEXT,
+  payment_method TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

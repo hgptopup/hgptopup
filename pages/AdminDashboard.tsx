@@ -2,7 +2,8 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore, HeroBanner } from '../store/useStore';
-import { Order, Game, GamePackage, CartItem, FloatingIcon } from '../types';
+import { Order, Game, GamePackage, CartItem, FloatingIcon, PopupOption } from '../types';
+import { LOGIN_METHODS } from '../constants';
 import { sendOrderNotification } from '../services/mailService';
 import { sendTelegramNotification } from '../services/telegramService';
 import { supabase } from '../services/supabaseClient';
@@ -43,6 +44,7 @@ const AdminDashboard: React.FC = () => {
   const portraitInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
   const iconInputRef = useRef<HTMLInputElement>(null);
+  const popupImageInputRef = useRef<HTMLInputElement>(null);
 
   // Game Modal State
   const [showGameModal, setShowGameModal] = useState(false);
@@ -52,8 +54,15 @@ const AdminDashboard: React.FC = () => {
   });
 
   // Package Management State
-  const [newPkg, setNewPkg] = useState<Partial<GamePackage>>({ amount: 0, unit: '', price: 0, bonus: '', popular: false });
+  const [newPkg, setNewPkg] = useState<Partial<GamePackage>>({ amount: '', unit: '', price: 0, bonus: '', popular: false });
   const [editingPkgId, setEditingPkgId] = useState<string | null>(null);
+
+  // Popup Option Management State
+  const [newPopupOption, setNewPopupOption] = useState<Partial<PopupOption>>({ title: '', targetGameId: '', image: '' });
+  const [editingPopupId, setEditingPopupId] = useState<string | null>(null);
+  const [managingPopupId, setManagingPopupId] = useState<string | null>(null);
+  const [newPopupPkg, setNewPopupPkg] = useState<Partial<GamePackage>>({ amount: '', unit: '', price: 0, bonus: '', popular: false });
+  const [editingPopupPkgId, setEditingPopupPkgId] = useState<string | null>(null);
 
   // Banner Modal State
   const [showBannerModal, setShowBannerModal] = useState(false);
@@ -237,7 +246,7 @@ const AdminDashboard: React.FC = () => {
       setGameFormData(prev => ({ ...prev, packages: [...(prev.packages || []), pkgWithId] }));
     }
     
-    setNewPkg({ amount: 0, unit: '', price: 0, bonus: '', popular: false });
+    setNewPkg({ amount: '', unit: '', price: 0, bonus: '', popular: false });
   };
 
   const handleEditPackage = (pkg: GamePackage) => {
@@ -254,9 +263,108 @@ const AdminDashboard: React.FC = () => {
   const removePackageFromForm = (id: string) => {
     if (editingPkgId === id) {
       setEditingPkgId(null);
-      setNewPkg({ amount: 0, unit: '', price: 0, bonus: '', popular: false });
+      setNewPkg({ amount: '', unit: '', price: 0, bonus: '', popular: false });
     }
     setGameFormData(prev => ({ ...prev, packages: prev.packages?.filter(p => p.id !== id) }));
+  };
+
+  const handleAddOrUpdatePopupOption = () => {
+    if (!newPopupOption.title || !newPopupOption.image) return alert("Please fill in Title and Image URL.");
+    
+    if (editingPopupId) {
+      setGameFormData(prev => ({
+        ...prev,
+        packages: prev.packages?.map(p => p.id === editingPopupId ? { ...p, ...newPopupOption, isPopupOption: true } as any : p)
+      }));
+      setEditingPopupId(null);
+    } else {
+      const optWithId = { ...newPopupOption, id: 'opt' + Math.random().toString(36).substr(2, 5), isPopupOption: true } as any;
+      setGameFormData(prev => ({ ...prev, packages: [...(prev.packages || []), optWithId] }));
+    }
+    
+    setNewPopupOption({ title: '', targetGameId: '', image: '' });
+  };
+
+  const handleEditPopupOption = (opt: any) => {
+    setEditingPopupId(opt.id);
+    setNewPopupOption({
+      title: opt.title,
+      targetGameId: opt.targetGameId,
+      image: opt.image
+    });
+  };
+
+  const removePopupOptionFromForm = (id: string) => {
+    if (editingPopupId === id) {
+      setEditingPopupId(null);
+      setNewPopupOption({ title: '', targetGameId: '', image: '' });
+    }
+    if (managingPopupId === id) {
+      setManagingPopupId(null);
+    }
+    setGameFormData(prev => ({ ...prev, packages: prev.packages?.filter(p => p.id !== id) }));
+  };
+
+  const handleAddOrUpdatePopupPackage = () => {
+    if (!newPopupPkg.amount || !newPopupPkg.unit || !newPopupPkg.price || !managingPopupId) return alert("Please fill in Amount, Unit, and Price.");
+    
+    setGameFormData(prev => {
+      const updatedPackages = prev.packages?.map(p => {
+        if (p.id === managingPopupId && 'isPopupOption' in p) {
+          const popupOpt = p as PopupOption;
+          const existingPkgs = popupOpt.packages || [];
+          
+          if (editingPopupPkgId) {
+            return {
+              ...popupOpt,
+              packages: existingPkgs.map(pkg => pkg.id === editingPopupPkgId ? { ...pkg, ...newPopupPkg } as GamePackage : pkg)
+            };
+          } else {
+            const pkgWithId = { ...newPopupPkg, id: 'pp' + Math.random().toString(36).substr(2, 5), popular: !!newPopupPkg.popular } as GamePackage;
+            return {
+              ...popupOpt,
+              packages: [...existingPkgs, pkgWithId]
+            };
+          }
+        }
+        return p;
+      });
+      return { ...prev, packages: updatedPackages };
+    });
+    
+    setEditingPopupPkgId(null);
+    setNewPopupPkg({ amount: '', unit: '', price: 0, bonus: '', popular: false });
+  };
+
+  const handleEditPopupPackage = (pkg: GamePackage) => {
+    setEditingPopupPkgId(pkg.id);
+    setNewPopupPkg({
+      amount: pkg.amount,
+      unit: pkg.unit,
+      price: pkg.price,
+      bonus: pkg.bonus,
+      popular: pkg.popular
+    });
+  };
+
+  const removePopupPackageFromForm = (pkgId: string) => {
+    if (editingPopupPkgId === pkgId) {
+      setEditingPopupPkgId(null);
+      setNewPopupPkg({ amount: '', unit: '', price: 0, bonus: '', popular: false });
+    }
+    setGameFormData(prev => {
+      const updatedPackages = prev.packages?.map(p => {
+        if (p.id === managingPopupId && 'isPopupOption' in p) {
+          const popupOpt = p as PopupOption;
+          return {
+            ...popupOpt,
+            packages: popupOpt.packages?.filter(pkg => pkg.id !== pkgId)
+          };
+        }
+        return p;
+      });
+      return { ...prev, packages: updatedPackages };
+    });
   };
 
   const handleStatusChange = async (order: Order, newStatus: Order['status']) => {
@@ -402,7 +510,7 @@ const AdminDashboard: React.FC = () => {
                   <div key={game.id} className="bg-[#FAF9F6] p-6 rounded-[2.5rem] border border-slate-200 hover:border-red-600/20 transition-all flex flex-col group relative shadow-sm">
                     <div className="flex gap-4 mb-6">
                       <div className="relative w-24 h-28 rounded-2xl overflow-hidden shrink-0 border border-slate-200 shadow-md bg-[#FAF9F6]">
-                        <img src={game.image} className="w-full h-full object-cover" alt={game.title} />
+                        <img src={game.image} className="w-full h-full object-cover" alt={game.title} referrerPolicy="no-referrer" />
                       </div>
                       <div className="flex-1">
                         <h3 className="font-display font-bold text-xl leading-tight mb-1 text-slate-900">{game.title}</h3>
@@ -426,7 +534,7 @@ const AdminDashboard: React.FC = () => {
                 {floatingIcons.map(icon => (
                   <div key={icon.id} className="bg-[#FAF9F6] p-6 rounded-[2.5rem] border border-slate-200 hover:border-red-600/20 transition-all flex flex-col group shadow-sm">
                     <div className="w-20 h-20 bg-[#FAF9F6] rounded-2xl flex items-center justify-center text-4xl mb-4 border border-slate-200">
-                      {icon.icon.startsWith('http') || icon.icon.startsWith('data:image/') ? <img src={icon.icon} className="w-12 h-12 object-contain" alt="" /> : icon.icon}
+                      {icon.icon.startsWith('http') || icon.icon.startsWith('data:image/') ? <img src={icon.icon} className="w-12 h-12 object-contain" alt="" referrerPolicy="no-referrer" /> : icon.icon}
                     </div>
                     <div className="flex-1">
                       <h3 className="font-bold text-slate-900">{icon.label || 'Floating Icon'}</h3>
@@ -502,7 +610,7 @@ const AdminDashboard: React.FC = () => {
                   {selectedOrderDetails.items.map((item, idx) => (
                     <div key={idx} className="bg-[#FAF9F6]/5 p-6 rounded-3xl border border-[#FAF9F6]/5">
                       <div className="flex gap-6 mb-8 items-start">
-                        <img src={item.image} className="w-20 h-24 rounded-2xl object-cover shadow-xl border border-[#FAF9F6]/10" alt="" />
+                        <img src={item.image} className="w-20 h-24 rounded-2xl object-cover shadow-xl border border-[#FAF9F6]/10" alt="" referrerPolicy="no-referrer" />
                         <div className="min-w-0 flex-1">
                           <h3 className="text-xl font-bold text-[#FAF9F6] mb-1 truncate">{item.gameTitle}</h3>
                           <p className="text-red-500 font-bold text-xs uppercase tracking-widest mb-3 truncate">{item.packageName}</p>
@@ -635,15 +743,87 @@ const AdminDashboard: React.FC = () => {
                 </div>
                 <div><label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">Description</label><textarea value={gameFormData.description} onChange={e => setGameFormData({...gameFormData, description: e.target.value})} rows={3} className="w-full bg-[#FAF9F6] border border-black/10 rounded-2xl py-4 px-5 text-sm text-slate-900 resize-none focus:border-red-600" /></div>
                 <div><label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">Portrait Image URL</label><div className="flex gap-2"><input type="text" value={gameFormData.image} onChange={e => setGameFormData({...gameFormData, image: e.target.value})} className="flex-1 bg-[#FAF9F6] border border-black/10 rounded-2xl py-4 px-5 text-sm outline-none focus:border-red-600 text-slate-900" /><button type="button" onClick={() => portraitInputRef.current?.click()} className="px-6 py-4 bg-[#FAF9F6] rounded-2xl text-[10px] font-bold uppercase hover:bg-[#FAF9F6]/80 text-slate-900">Upload</button><input type="file" ref={portraitInputRef} className="hidden" accept="image/*" onChange={e => handleFileUpload(e, 'image', setGameFormData)} /></div></div>
+                
+                <div className="p-6 bg-[#FAF9F6] rounded-3xl border border-black/5">
+                  <h3 className="text-xs font-bold uppercase tracking-widest mb-6 text-slate-900">Login Methods</h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {LOGIN_METHODS.map(method => (
+                      <label key={method.id} className="flex items-center gap-2 cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          checked={gameFormData.loginMethods?.includes(method.id) || (!gameFormData.loginMethods && true)} // Default all checked if undefined
+                          onChange={(e) => {
+                            const currentMethods = gameFormData.loginMethods || LOGIN_METHODS.map(m => m.id);
+                            if (e.target.checked) {
+                              setGameFormData({ ...gameFormData, loginMethods: [...currentMethods, method.id] });
+                            } else {
+                              setGameFormData({ ...gameFormData, loginMethods: currentMethods.filter(id => id !== method.id) });
+                            }
+                          }}
+                          className="w-4 h-4 text-red-600 rounded border-black/20 focus:ring-red-600"
+                        />
+                        <span className="text-xs font-medium text-slate-700">{method.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="p-6 bg-[#FAF9F6] rounded-3xl border border-black/5">
                   <h3 className="text-xs font-bold uppercase tracking-widest mb-6 text-slate-900">Packages Inventory</h3>
-                  <div className="space-y-2 mb-8">{gameFormData.packages?.map(p => (<div key={p.id} className="p-4 bg-[#FAF9F6] rounded-xl border border-black/5 flex justify-between items-center"><div><span className="text-sm font-bold text-slate-900">{p.amount} {p.unit}</span><span className="mx-2 text-slate-200">|</span><span className="text-sm font-bold text-red-600">৳{p.price.toFixed(0)}</span></div><div className="flex gap-3"><button type="button" onClick={() => handleEditPackage(p)} className="text-[10px] font-bold uppercase text-slate-400 hover:text-slate-900">Edit</button><button type="button" onClick={() => removePackageFromForm(p.id)} className="text-[10px] font-bold uppercase text-red-600/40 hover:text-red-600">Delete</button></div></div>))}</div>
+                  <div className="space-y-2 mb-8">{gameFormData.packages?.filter(p => !('isPopupOption' in p) || !p.isPopupOption).map(p => (<div key={p.id} className="p-4 bg-[#FAF9F6] rounded-xl border border-black/5 flex justify-between items-center"><div><span className="text-sm font-bold text-slate-900">{(p as GamePackage).amount} {(p as GamePackage).unit}</span><span className="mx-2 text-slate-200">|</span><span className="text-sm font-bold text-red-600">৳{(p as GamePackage).price?.toFixed(0)}</span></div><div className="flex gap-3"><button type="button" onClick={() => handleEditPackage(p as GamePackage)} className="text-[10px] font-bold uppercase text-slate-400 hover:text-slate-900">Edit</button><button type="button" onClick={() => removePackageFromForm(p.id)} className="text-[10px] font-bold uppercase text-red-600/40 hover:text-red-600">Delete</button></div></div>))}</div>
                   <div className="grid grid-cols-4 gap-3">
-                    <input type="number" placeholder="Amt" value={newPkg.amount || ''} onChange={e => setNewPkg({...newPkg, amount: Number(e.target.value)})} className="bg-[#FAF9F6] border border-black/10 rounded-xl p-3 text-xs text-slate-900" />
+                    <input type="text" placeholder="Amt" value={newPkg.amount || ''} onChange={e => setNewPkg({...newPkg, amount: e.target.value})} className="bg-[#FAF9F6] border border-black/10 rounded-xl p-3 text-xs text-slate-900" />
                     <input type="text" placeholder="Unit" value={newPkg.unit} onChange={e => setNewPkg({...newPkg, unit: e.target.value})} className="bg-[#FAF9F6] border border-black/10 rounded-xl p-3 text-xs text-slate-900" />
                     <input type="number" step="0.01" placeholder="Price" value={newPkg.price || ''} onChange={e => setNewPkg({...newPkg, price: Number(e.target.value)})} className="bg-[#FAF9F6] border border-black/10 rounded-xl p-3 text-xs text-slate-900" />
                     <button type="button" onClick={handleAddOrUpdatePackage} className={`py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest ${editingPkgId ? 'bg-red-600 text-[#FAF9F6]' : 'bg-slate-900 text-[#FAF9F6]'}`}>{editingPkgId ? 'Update' : 'Add'}</button>
                   </div>
+                </div>
+
+                <div className="p-6 bg-[#FAF9F6] rounded-3xl border border-black/5">
+                  <h3 className="text-xs font-bold uppercase tracking-widest mb-6 text-slate-900">Popup Options (Sub-Shops)</h3>
+                  <div className="space-y-2 mb-8">{gameFormData.packages?.filter(p => 'isPopupOption' in p && p.isPopupOption).map(p => (<div key={p.id} className="p-4 bg-[#FAF9F6] rounded-xl border border-black/5 flex justify-between items-center"><div className="flex items-center gap-3">{(p as any).image && <img src={(p as any).image} alt="" className="w-8 h-8 rounded-lg object-cover" referrerPolicy="no-referrer" />}<div><span className="text-sm font-bold text-slate-900">{(p as any).title}</span><span className="mx-2 text-slate-200">|</span><span className="text-xs text-slate-500">Target: {(p as any).targetGameId || 'Self'}</span></div></div><div className="flex gap-3"><button type="button" onClick={() => setManagingPopupId(p.id)} className="text-[10px] font-bold uppercase text-blue-600 hover:text-blue-800">Prices</button><button type="button" onClick={() => handleEditPopupOption(p)} className="text-[10px] font-bold uppercase text-slate-400 hover:text-slate-900">Edit</button><button type="button" onClick={() => removePopupOptionFromForm(p.id)} className="text-[10px] font-bold uppercase text-red-600/40 hover:text-red-600">Delete</button></div></div>))}</div>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                    <input type="text" placeholder="Title" value={newPopupOption.title} onChange={e => setNewPopupOption({...newPopupOption, title: e.target.value})} className="bg-[#FAF9F6] border border-black/10 rounded-xl p-3 text-xs text-slate-900" />
+                    <input type="text" placeholder="Target Game ID (Optional)" value={newPopupOption.targetGameId || ''} onChange={e => setNewPopupOption({...newPopupOption, targetGameId: e.target.value})} className="bg-[#FAF9F6] border border-black/10 rounded-xl p-3 text-xs text-slate-900" />
+                    <div className="flex gap-2">
+                      {newPopupOption.image && (
+                        <img src={newPopupOption.image} alt="" className="w-10 h-10 rounded-lg object-cover border border-black/10" referrerPolicy="no-referrer" />
+                      )}
+                      <input type="text" placeholder="Image URL" value={newPopupOption.image} onChange={e => setNewPopupOption({...newPopupOption, image: e.target.value})} className="flex-1 bg-[#FAF9F6] border border-black/10 rounded-xl p-3 text-xs text-slate-900" />
+                      <button type="button" onClick={() => popupImageInputRef.current?.click()} className="px-4 py-3 bg-[#FAF9F6] border border-black/10 rounded-xl text-[10px] font-bold uppercase hover:bg-black/5 text-slate-900">Upload</button>
+                      <input type="file" ref={popupImageInputRef} className="hidden" accept="image/*" onChange={e => handleFileUpload(e, 'image', setNewPopupOption)} />
+                    </div>
+                    <button type="button" onClick={handleAddOrUpdatePopupOption} className={`py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest ${editingPopupId ? 'bg-red-600 text-[#FAF9F6]' : 'bg-slate-900 text-[#FAF9F6]'}`}>{editingPopupId ? 'Update' : 'Add Option'}</button>
+                  </div>
+
+                  {managingPopupId && (
+                    <div className="mt-6 p-4 bg-blue-50/50 border border-blue-100 rounded-2xl">
+                      <h4 className="text-[10px] font-bold uppercase tracking-widest mb-4 text-blue-900">
+                        Price List for: {(gameFormData.packages?.find(p => p.id === managingPopupId) as any)?.title}
+                      </h4>
+                      <div className="space-y-2 mb-4">
+                        {(gameFormData.packages?.find(p => p.id === managingPopupId) as any)?.packages?.map((pkg: GamePackage) => (
+                          <div key={pkg.id} className="p-3 bg-white rounded-xl border border-blue-100 flex justify-between items-center">
+                            <div>
+                              <span className="text-sm font-bold text-slate-900">{pkg.amount} {pkg.unit}</span>
+                              <span className="mx-2 text-slate-200">|</span>
+                              <span className="text-sm font-bold text-red-600">৳{pkg.price.toFixed(0)}</span>
+                            </div>
+                            <div className="flex gap-3">
+                              <button type="button" onClick={() => handleEditPopupPackage(pkg)} className="text-[10px] font-bold uppercase text-slate-400 hover:text-slate-900">Edit</button>
+                              <button type="button" onClick={() => removePopupPackageFromForm(pkg.id)} className="text-[10px] font-bold uppercase text-red-600/40 hover:text-red-600">Delete</button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="grid grid-cols-4 gap-3">
+                        <input type="text" placeholder="Amt" value={newPopupPkg.amount || ''} onChange={e => setNewPopupPkg({...newPopupPkg, amount: e.target.value})} className="bg-white border border-blue-100 rounded-xl p-3 text-xs text-slate-900" />
+                        <input type="text" placeholder="Unit" value={newPopupPkg.unit} onChange={e => setNewPopupPkg({...newPopupPkg, unit: e.target.value})} className="bg-white border border-blue-100 rounded-xl p-3 text-xs text-slate-900" />
+                        <input type="number" step="0.01" placeholder="Price" value={newPopupPkg.price || ''} onChange={e => setNewPopupPkg({...newPopupPkg, price: Number(e.target.value)})} className="bg-white border border-blue-100 rounded-xl p-3 text-xs text-slate-900" />
+                        <button type="button" onClick={handleAddOrUpdatePopupPackage} className={`py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest ${editingPopupPkgId ? 'bg-blue-600 text-white' : 'bg-slate-900 text-white'}`}>{editingPopupPkgId ? 'Update' : 'Add'}</button>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <button type="submit" disabled={isSubmitting} className="w-full py-5 bg-red-600 hover:bg-red-700 rounded-2xl font-bold uppercase text-xs shadow-xl text-[#FAF9F6]">{isSubmitting ? 'Syncing...' : 'Deploy Catalogue Entry'}</button>
               </form>

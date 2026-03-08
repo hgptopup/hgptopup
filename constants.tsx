@@ -1,6 +1,19 @@
 
 import { Game } from './types';
 
+export const LOGIN_METHODS = [
+  { id: 'uid', label: 'UID', fieldLabel: 'Player UID', hasPassword: false, hasWhatsapp: false, type: 'text' },
+  { id: 'konami', label: 'Konami Mail', fieldLabel: 'Konami Email', hasPassword: true, hasWhatsapp: true, type: 'email' },
+  { id: 'supercell', label: 'Supercell mail', fieldLabel: 'Supercell Email', hasPassword: false, hasWhatsapp: true, type: 'email' },
+  { id: 'facebook', label: 'Facebook Login', fieldLabel: 'Facebook Email/Phone', hasPassword: true, hasWhatsapp: true, type: 'text' },
+  { id: 'gmail', label: 'Gmail Login', fieldLabel: 'Gmail Address', hasPassword: true, hasWhatsapp: true, type: 'email' },
+  { id: 'twitter', label: 'Twitter Login', fieldLabel: 'Twitter Username/Email', hasPassword: true, hasWhatsapp: true, type: 'text' },
+  { id: 'vk', label: 'VK Login', fieldLabel: 'VK Email/Phone', hasPassword: true, hasWhatsapp: true, type: 'text' },
+  { id: 'username', label: 'Username Login', fieldLabel: 'Username', hasPassword: true, hasWhatsapp: true, type: 'text' },
+  { id: 'hoyoverse', label: 'Hoyoverse', fieldLabel: 'Hoyoverse Email', hasPassword: true, hasWhatsapp: true, type: 'email' },
+  { id: 'whatsapp_number', label: 'Whats app Number', fieldLabel: 'WhatsApp Number', hasPassword: false, hasWhatsapp: false, type: 'tel' }
+];
+
 export const GAMES: Game[] = [
   {
     id: 'g1',

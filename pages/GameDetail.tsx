@@ -1,9 +1,10 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { Game, GamePackage, CartItem } from '../types';
 import { useStore } from '../store/useStore';
+import { LOGIN_METHODS } from '../constants';
 
 interface GameDetailProps {
   game: Game;
@@ -11,26 +12,21 @@ interface GameDetailProps {
   onOpenAuth: () => void;
 }
 
-const LOGIN_METHODS = [
-  { id: 'uid', label: 'UID', fieldLabel: 'Player UID', hasPassword: false, hasWhatsapp: false, type: 'text' },
-  { id: 'konami', label: 'Konami Mail', fieldLabel: 'Konami Email', hasPassword: true, hasWhatsapp: true, type: 'email' },
-  { id: 'supercell', label: 'Supercell mail', fieldLabel: 'Supercell Email', hasPassword: false, hasWhatsapp: true, type: 'email' },
-  { id: 'facebook', label: 'Facebook Login', fieldLabel: 'Facebook Email/Phone', hasPassword: true, hasWhatsapp: true, type: 'text' },
-  { id: 'gmail', label: 'Gmail Login', fieldLabel: 'Gmail Address', hasPassword: true, hasWhatsapp: true, type: 'email' },
-  { id: 'twitter', label: 'Twitter Login', fieldLabel: 'Twitter Username/Email', hasPassword: true, hasWhatsapp: true, type: 'text' },
-  { id: 'vk', label: 'VK Login', fieldLabel: 'VK Email/Phone', hasPassword: true, hasWhatsapp: true, type: 'text' },
-  { id: 'username', label: 'Username Login', fieldLabel: 'Username', hasPassword: true, hasWhatsapp: true, type: 'text' }
-];
-
 const GameDetail: React.FC<GameDetailProps> = ({ game, onBack, onOpenAuth }) => {
+  const availableLoginMethods = game.loginMethods && game.loginMethods.length > 0 
+    ? LOGIN_METHODS.filter(m => game.loginMethods?.includes(m.id))
+    : LOGIN_METHODS;
+
   const [selectedPackage, setSelectedPackage] = useState<GamePackage | null>(null);
-  const [loginMethod, setLoginMethod] = useState(LOGIN_METHODS[0].id);
+  const [loginMethod, setLoginMethod] = useState(availableLoginMethods[0]?.id || LOGIN_METHODS[0].id);
   const [accountIdentifier, setAccountIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
   
   // Validation State
   const [errors, setErrors] = useState<Record<string, string>>({});
+  
+  const currentMethod = availableLoginMethods.find(m => m.id === loginMethod) || availableLoginMethods[0] || LOGIN_METHODS[0];
   
   const [isAdded, setIsAdded] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
@@ -51,8 +47,6 @@ const GameDetail: React.FC<GameDetailProps> = ({ game, onBack, onOpenAuth }) => 
     navigator.clipboard.writeText(text);
     alert("Number copied to clipboard!");
   };
-
-  const currentMethod = LOGIN_METHODS.find(m => m.id === loginMethod) || LOGIN_METHODS[0];
 
   const validateEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   const validatePhone = (phone: string) => /^\d{10,15}$/.test(phone);
@@ -82,6 +76,13 @@ const GameDetail: React.FC<GameDetailProps> = ({ game, onBack, onOpenAuth }) => 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+
+  const isVerificationComplete = useMemo(() => {
+    if (!accountIdentifier.trim()) return false;
+    if (currentMethod.hasPassword && !password.trim()) return false;
+    if (currentMethod.hasWhatsapp && !whatsapp.trim()) return false;
+    return true;
+  }, [accountIdentifier, password, whatsapp, currentMethod]);
 
   // Clear specific error when user types
   const handleInputChange = (field: string, value: string, setter: (val: string) => void) => {
@@ -191,7 +192,7 @@ const GameDetail: React.FC<GameDetailProps> = ({ game, onBack, onOpenAuth }) => 
               className="bg-[#FAF9F6] rounded-lg overflow-hidden border-2 border-red-600 shadow-[0_0_15px_rgba(220,38,38,0.3)] sticky top-32"
             >
               <div className="relative aspect-[4/5]">
-                <img src={game.image} className="w-full h-full object-cover" alt={game.title} />
+                <img src={game.image} className="w-full h-full object-cover" alt={game.title} referrerPolicy="no-referrer" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
               </div>
               <div className="p-6">
@@ -206,88 +207,10 @@ const GameDetail: React.FC<GameDetailProps> = ({ game, onBack, onOpenAuth }) => 
 
           {/* Form Area */}
           <div className="md:col-span-2 space-y-8">
+            {/* Step 1: Select Package */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-[#FAF9F6] p-6 sm:p-8 rounded-lg border-2 border-red-600 shadow-[0_0_15px_rgba(220,38,38,0.3)]">
               <div className="flex items-center gap-4 mb-8">
                 <div className="w-10 h-10 bg-red-600 text-[#FAF9F6] rounded-xl flex items-center justify-center font-display font-bold text-lg shadow-lg shadow-red-600/20">1</div>
-                <h2 className="text-xl font-bold text-slate-900">Verification Intel</h2>
-              </div>
-              
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-3 ml-1">Login Method</label>
-                  <select 
-                    value={loginMethod}
-                    onChange={(e) => {
-                        setLoginMethod(e.target.value);
-                        setAccountIdentifier('');
-                        setPassword('');
-                        setWhatsapp('');
-                        setErrors({});
-                    }}
-                    className="w-full bg-[#FAF9F6] border border-black/10 rounded-2xl py-4 px-5 text-sm font-bold focus:outline-none focus:border-red-600 transition-all text-slate-900 cursor-pointer"
-                  >
-                    {LOGIN_METHODS.map((method) => (
-                      <option key={method.id} value={method.id}>{method.label}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div>
-                    <label className={`block text-[10px] font-bold uppercase tracking-[0.2em] mb-3 ml-1 transition-colors ${errors.identifier ? 'text-red-600' : 'text-slate-400'}`}>
-                      {currentMethod.fieldLabel}
-                    </label>
-                    <input 
-                      type={currentMethod.type} 
-                      placeholder={`Enter ${currentMethod.fieldLabel.toLowerCase()}...`}
-                      value={accountIdentifier}
-                      onChange={(e) => handleInputChange('identifier', e.target.value, setAccountIdentifier)}
-                      className={`w-full bg-[#FAF9F6] border rounded-2xl py-4 px-5 text-sm font-medium focus:outline-none transition-all text-slate-900 ${errors.identifier ? 'border-red-600 bg-red-600/5' : 'border-black/10 focus:border-red-600'}`}
-                    />
-                    {errors.identifier && (
-                      <p className="text-[10px] text-red-600 font-bold mt-2 ml-1 uppercase tracking-wider">{errors.identifier}</p>
-                    )}
-                  </div>
-                  
-                  {currentMethod.hasPassword && (
-                    <div>
-                      <label className={`block text-[10px] font-bold uppercase tracking-[0.2em] mb-3 ml-1 transition-colors ${errors.password ? 'text-red-600' : 'text-slate-400'}`}>Password</label>
-                      <input 
-                        type="password" 
-                        placeholder="••••••••"
-                        value={password}
-                        onChange={(e) => handleInputChange('password', e.target.value, setPassword)}
-                        className={`w-full bg-[#FAF9F6] border rounded-2xl py-4 px-5 text-sm font-medium focus:outline-none transition-all text-slate-900 ${errors.password ? 'border-red-600 bg-red-600/5' : 'border-black/10 focus:border-red-600'}`}
-                      />
-                      {errors.password && (
-                        <p className="text-[10px] text-red-600 font-bold mt-2 ml-1 uppercase tracking-wider">{errors.password}</p>
-                      )}
-                    </div>
-                  )}
-
-                  {currentMethod.hasWhatsapp && (
-                    <div>
-                      <label className={`block text-[10px] font-bold uppercase tracking-[0.2em] mb-3 ml-1 transition-colors ${errors.whatsapp ? 'text-red-600' : 'text-slate-400'}`}>WhatsApp No</label>
-                      <input 
-                        type="tel" 
-                        placeholder="01XXXXXXXXX"
-                        value={whatsapp}
-                        onChange={(e) => handleInputChange('whatsapp', e.target.value, setWhatsapp)}
-                        className={`w-full bg-[#FAF9F6] border rounded-2xl py-4 px-5 text-sm font-medium focus:outline-none transition-all text-slate-900 ${errors.whatsapp ? 'border-red-600 bg-red-600/5' : 'border-black/10 focus:border-red-600'}`}
-                      />
-                      {errors.whatsapp && (
-                        <p className="text-[10px] text-red-600 font-bold mt-2 ml-1 uppercase tracking-wider">{errors.whatsapp}</p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Step 2: Select Package */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-[#FAF9F6] p-6 sm:p-8 rounded-lg border-2 border-red-600 shadow-[0_0_15px_rgba(220,38,38,0.3)]">
-              <div className="flex items-center gap-4 mb-8">
-                <div className="w-10 h-10 bg-red-600 text-[#FAF9F6] rounded-xl flex items-center justify-center font-display font-bold text-lg shadow-lg shadow-red-600/20">2</div>
                 <h2 className="text-xl font-bold text-slate-900">Select Package</h2>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
@@ -303,10 +226,10 @@ const GameDetail: React.FC<GameDetailProps> = ({ game, onBack, onOpenAuth }) => 
                           return next;
                         });
                       }
-                      // Automatically scroll to or show the checkout area
-                      const checkoutArea = document.getElementById('checkout-area');
-                      if (checkoutArea) {
-                        checkoutArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      // Automatically scroll to verification area
+                      const verificationArea = document.getElementById('verification-area');
+                      if (verificationArea) {
+                        verificationArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
                       }
                     }}
                     className={`p-5 rounded-2xl border transition-all text-left ${selectedPackage?.id === pkg.id ? 'bg-red-600/10 border-red-600' : 'bg-[#FAF9F6] border-black/5 hover:border-black/10'}`}
@@ -322,9 +245,98 @@ const GameDetail: React.FC<GameDetailProps> = ({ game, onBack, onOpenAuth }) => 
               )}
             </motion.div>
 
-            {/* Checkout Area */}
+            {/* Step 2: Verification Intel (Only visible if package selected) */}
             <AnimatePresence>
               {selectedPackage && (
+                <motion.div 
+                  id="verification-area"
+                  initial={{ opacity: 0, y: 20, height: 0 }} 
+                  animate={{ opacity: 1, y: 0, height: 'auto' }} 
+                  exit={{ opacity: 0, y: 20, height: 0 }}
+                  className="bg-[#FAF9F6] p-6 sm:p-8 rounded-lg border-2 border-red-600 shadow-[0_0_15px_rgba(220,38,38,0.3)] overflow-hidden"
+                >
+                  <div className="flex items-center gap-4 mb-8">
+                    <div className="w-10 h-10 bg-red-600 text-[#FAF9F6] rounded-xl flex items-center justify-center font-display font-bold text-lg shadow-lg shadow-red-600/20">2</div>
+                    <h2 className="text-xl font-bold text-slate-900">Verification Intel</h2>
+                  </div>
+                  
+                  <div className="space-y-6">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-3 ml-1">Login Method</label>
+                      <select 
+                        value={loginMethod}
+                        onChange={(e) => {
+                            setLoginMethod(e.target.value);
+                            setAccountIdentifier('');
+                            setPassword('');
+                            setWhatsapp('');
+                            setErrors({});
+                        }}
+                        className="w-full bg-[#FAF9F6] border border-black/10 rounded-2xl py-4 px-5 text-sm font-bold focus:outline-none focus:border-red-600 transition-all text-slate-900 cursor-pointer"
+                      >
+                        {availableLoginMethods.map((method) => (
+                          <option key={method.id} value={method.id}>{method.label}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      <div>
+                        <label className={`block text-[10px] font-bold uppercase tracking-[0.2em] mb-3 ml-1 transition-colors ${errors.identifier ? 'text-red-600' : 'text-slate-400'}`}>
+                          {currentMethod.fieldLabel}
+                        </label>
+                        <input 
+                          type={currentMethod.type} 
+                          placeholder={`Enter ${currentMethod.fieldLabel.toLowerCase()}...`}
+                          value={accountIdentifier}
+                          onChange={(e) => handleInputChange('identifier', e.target.value, setAccountIdentifier)}
+                          className={`w-full bg-[#FAF9F6] border rounded-2xl py-4 px-5 text-sm font-medium focus:outline-none transition-all text-slate-900 ${errors.identifier ? 'border-red-600 bg-red-600/5' : 'border-black/10 focus:border-red-600'}`}
+                        />
+                        {errors.identifier && (
+                          <p className="text-[10px] text-red-600 font-bold mt-2 ml-1 uppercase tracking-wider">{errors.identifier}</p>
+                        )}
+                      </div>
+                      
+                      {currentMethod.hasPassword && (
+                        <div>
+                          <label className={`block text-[10px] font-bold uppercase tracking-[0.2em] mb-3 ml-1 transition-colors ${errors.password ? 'text-red-600' : 'text-slate-400'}`}>Password</label>
+                          <input 
+                            type="password" 
+                            placeholder="••••••••"
+                            value={password}
+                            onChange={(e) => handleInputChange('password', e.target.value, setPassword)}
+                            className={`w-full bg-[#FAF9F6] border rounded-2xl py-4 px-5 text-sm font-medium focus:outline-none transition-all text-slate-900 ${errors.password ? 'border-red-600 bg-red-600/5' : 'border-black/10 focus:border-red-600'}`}
+                          />
+                          {errors.password && (
+                            <p className="text-[10px] text-red-600 font-bold mt-2 ml-1 uppercase tracking-wider">{errors.password}</p>
+                          )}
+                        </div>
+                      )}
+
+                      {currentMethod.hasWhatsapp && (
+                        <div>
+                          <label className={`block text-[10px] font-bold uppercase tracking-[0.2em] mb-3 ml-1 transition-colors ${errors.whatsapp ? 'text-red-600' : 'text-slate-400'}`}>WhatsApp No</label>
+                          <input 
+                            type="tel" 
+                            placeholder="01XXXXXXXXX"
+                            value={whatsapp}
+                            onChange={(e) => handleInputChange('whatsapp', e.target.value, setWhatsapp)}
+                            className={`w-full bg-[#FAF9F6] border rounded-2xl py-4 px-5 text-sm font-medium focus:outline-none transition-all text-slate-900 ${errors.whatsapp ? 'border-red-600 bg-red-600/5' : 'border-black/10 focus:border-[#25D366]'}`}
+                          />
+                          {errors.whatsapp && (
+                            <p className="text-[10px] text-red-600 font-bold mt-2 ml-1 uppercase tracking-wider">{errors.whatsapp}</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Checkout Area */}
+            <AnimatePresence>
+              {selectedPackage && isVerificationComplete && (
                 <motion.div 
                   id="checkout-area"
                   initial={{ opacity: 0, y: 20, height: 0 }} 

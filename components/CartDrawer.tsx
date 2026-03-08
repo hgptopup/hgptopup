@@ -150,7 +150,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                           key={item.cartId}
                           className="bg-white p-4 rounded-2xl flex items-center gap-4 relative overflow-hidden group border border-black/5 shadow-sm"
                         >
-                          <img src={item.image} className="w-16 h-16 rounded-xl object-cover" alt={item.gameTitle} />
+                          <img src={item.image} className="w-16 h-16 rounded-xl object-cover" alt={item.gameTitle} referrerPolicy="no-referrer" />
                           <div className="flex-1">
                             <h4 className="font-bold text-sm leading-tight text-slate-900">{item.gameTitle}</h4>
                             <p className="text-xs text-slate-500 mb-1">{item.packageName}</p>
