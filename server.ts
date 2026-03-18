@@ -229,7 +229,7 @@ app.post("/api/payment/verify", async (req, res) => {
 
     if (isSuccess && orderId) {
       // Use the secure RPC function to update the order and bypass RLS
-      const { data: rpcResult, error: rpcError } = await supabase.rpc('complete_payment', {
+      const { data: rpcResult, error: rpcError } = await supabase.rpc('process_payment', {
         p_order_id: orderId,
         p_txn_id: invoiceId
       });
@@ -237,7 +237,7 @@ app.post("/api/payment/verify", async (req, res) => {
       if (rpcError) {
         console.error("HGP Verify RPC Error:", rpcError);
       } else if (rpcResult && rpcResult.success) {
-        console.log(`HGP Verify: Order ${orderId} updated to COMPLETED via RPC`);
+        console.log(`HGP Verify: Order ${orderId} updated to PROCESSING via RPC`);
         const order = rpcResult.order;
         const profile = rpcResult.profile;
         if (profile && profile.full_name) {
@@ -246,8 +246,8 @@ app.post("/api/payment/verify", async (req, res) => {
 
         console.log("HGP Verify: Sending Telegram notification");
         await sendTelegramNotification(order);
-      } else if (rpcResult && rpcResult.already_completed) {
-        console.log(`HGP Verify: Order ${orderId} is already COMPLETED, skipping notification.`);
+      } else if (rpcResult && rpcResult.already_processed) {
+        console.log(`HGP Verify: Order ${orderId} is already PROCESSING/COMPLETED, skipping notification.`);
       }
     }
 
@@ -278,7 +278,7 @@ app.post("/api/payment/webhook", async (req, res) => {
 
     if (isSuccess && orderId) {
       // Use the secure RPC function to update the order and bypass RLS
-      const { data: rpcResult, error: rpcError } = await supabase.rpc('complete_payment', {
+      const { data: rpcResult, error: rpcError } = await supabase.rpc('process_payment', {
         p_order_id: orderId,
         p_txn_id: transactionId
       });
@@ -286,7 +286,7 @@ app.post("/api/payment/webhook", async (req, res) => {
       if (rpcError) {
         console.error("HGP Webhook RPC Error:", rpcError);
       } else if (rpcResult && rpcResult.success) {
-        console.log(`HGP Webhook: Order ${orderId} updated to COMPLETED via RPC`);
+        console.log(`HGP Webhook: Order ${orderId} updated to PROCESSING via RPC`);
         const order = rpcResult.order;
         const profile = rpcResult.profile;
         if (profile && profile.full_name) {
@@ -295,8 +295,8 @@ app.post("/api/payment/webhook", async (req, res) => {
 
         console.log("HGP Webhook: Sending Telegram notification");
         await sendTelegramNotification(order);
-      } else if (rpcResult && rpcResult.already_completed) {
-        console.log(`HGP Webhook: Order ${orderId} is already COMPLETED, skipping notification.`);
+      } else if (rpcResult && rpcResult.already_processed) {
+        console.log(`HGP Webhook: Order ${orderId} is already PROCESSING/COMPLETED, skipping notification.`);
       }
     }
 
@@ -323,13 +323,16 @@ app.post("/api/notifications/email", async (req, res) => {
     });
 
     const isCompleted = order.status === 'COMPLETED';
+    const isProcessing = order.status === 'PROCESSING';
     const isCancelled = order.status === 'CANCELLED';
     
     let subject = isCompleted 
       ? `Order Delivery Complete - HGP #${order.id}`
-      : isCancelled
-        ? `Order Rejected/Cancelled - HGP #${order.id}`
-        : `Order Confirmation - HGP #${order.id}`;
+      : isProcessing
+        ? `Payment Successful - Order Processing - HGP #${order.id}`
+        : isCancelled
+          ? `Order Rejected/Cancelled - HGP #${order.id}`
+          : `Order Confirmation - HGP #${order.id}`;
 
     if (isAdminAlert) {
       subject = `🚨 NEW ORDER RECEIVED - HGP #${order.id}`;
@@ -345,11 +348,14 @@ app.post("/api/notifications/email", async (req, res) => {
           : isCompleted 
             ? `<p style="color: #16a34a; font-weight: bold; font-size: 18px;">Your order has been successfully processed and deployed!</p>
                <p>The items have been added to your account. Thank you for choosing HGP.</p>`
-            : isCancelled
-              ? `<p style="color: #dc2626; font-weight: bold; font-size: 18px;">Your order has been rejected or cancelled.</p>
-                 <p>If you have already paid, please contact support with your Transaction ID for a refund or manual processing.</p>`
-              : `<p>Thank you for your order! We have received your request and it is being processed.</p>
-                 <p>Deployment usually takes 5-30 minutes.</p>`
+            : isProcessing
+              ? `<p style="color: #eab308; font-weight: bold; font-size: 18px;">Payment Successful! Your order is now processing.</p>
+                 <p>Our admins will manually review and complete your order shortly.</p>`
+              : isCancelled
+                ? `<p style="color: #dc2626; font-weight: bold; font-size: 18px;">Your order has been rejected or cancelled.</p>
+                   <p>If you have already paid, please contact support with your Transaction ID for a refund or manual processing.</p>`
+                : `<p>Thank you for your order! We have received your request and it is being processed.</p>
+                   <p>Deployment usually takes 5-30 minutes.</p>`
         }
         <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
         <h3>Order Summary:</h3>

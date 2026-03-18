@@ -482,13 +482,13 @@ const AdminDashboard: React.FC = () => {
                                  ))}
                                </td>
                                <td className="p-6">
-                                 <span className={`px-3 py-1 rounded-full text-[9px] font-bold uppercase ${order.status === 'COMPLETED' ? 'bg-green-100 text-green-600' : order.status === 'PENDING' ? 'bg-red-100 text-red-600' : 'bg-red-100 text-red-600'}`}>
+                                 <span className={`px-3 py-1 rounded-full text-[9px] font-bold uppercase ${order.status === 'COMPLETED' ? 'bg-green-100 text-green-600' : order.status === 'PROCESSING' ? 'bg-yellow-100 text-yellow-600' : order.status === 'PENDING' ? 'bg-red-100 text-red-600' : 'bg-red-100 text-red-600'}`}>
                                    {order.status}
                                  </span>
                                </td>
                                <td className="p-6 text-slate-900 font-bold">৳{Number(order.totalAmount).toFixed(0)}</td>
                                <td className="p-6 text-right space-x-2" onClick={(e) => e.stopPropagation()}>
-                                 {order.status === 'PENDING' && (
+                                 {(order.status === 'PENDING' || order.status === 'PROCESSING') && (
                                    <>
                                      <button type="button" onClick={() => handleStatusChange(order, 'COMPLETED')} className="px-3 py-1.5 bg-green-100 hover:bg-green-200 text-green-600 rounded-lg text-[10px] font-bold uppercase transition-colors">Complete</button>
                                      <button type="button" onClick={() => handleStatusChange(order, 'CANCELLED')} className="px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg text-[10px] font-bold uppercase transition-colors">Void</button>
@@ -665,7 +665,7 @@ const AdminDashboard: React.FC = () => {
                   ))}
 
                   <div className="flex gap-4 pt-4">
-                    {selectedOrderDetails.status === 'PENDING' && (
+                    {(selectedOrderDetails.status === 'PENDING' || selectedOrderDetails.status === 'PROCESSING') && (
                       <button onClick={() => { handleStatusChange(selectedOrderDetails, 'COMPLETED'); setSelectedOrderDetails(null); }} className="flex-1 py-5 bg-green-600 hover:bg-green-700 text-[#FAF9F6] font-bold rounded-2xl transition-all shadow-xl shadow-green-600/20 uppercase tracking-widest text-xs">Deploy Package</button>
                     )}
                     <button onClick={() => setSelectedOrderDetails(null)} className="flex-1 py-5 bg-[#FAF9F6]/5 hover:bg-[#FAF9F6]/10 text-[#FAF9F6] font-bold rounded-2xl transition-all border border-[#FAF9F6]/10 uppercase tracking-widest text-xs">Dismiss Intel</button>

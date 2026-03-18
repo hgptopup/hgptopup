@@ -46,9 +46,16 @@ serve(async (req) => {
 
     // Prepare Email Content
     const isCompleted = order.status === 'COMPLETED';
+    const isProcessing = order.status === 'PROCESSING';
+    const isCancelled = order.status === 'CANCELLED';
+    
     let subject = isCompleted 
-      ? `Deployment Successful - HGP #${order.id}`
-      : `Order Confirmation - HGP #${order.id}`;
+      ? `Order Delivery Complete - HGP #${order.id}`
+      : isProcessing
+        ? `Payment Successful - Order Processing - HGP #${order.id}`
+        : isCancelled
+          ? `Order Rejected/Cancelled - HGP #${order.id}`
+          : `Order Confirmation - HGP #${order.id}`;
 
     if (isAdminAlert) {
       subject = `🚨 NEW ORDER RECEIVED - HGP #${order.id}`;
@@ -65,8 +72,14 @@ serve(async (req) => {
           : isCompleted 
             ? `<p style="color: #16a34a; font-weight: bold; font-size: 18px;">Your order has been successfully processed and deployed!</p>
                <p>The items have been added to your account. Thank you for choosing HGP.</p>`
-            : `<p>Thank you for your order! We have received your request and it is being processed.</p>
-               <p>Deployment usually takes 5-30 minutes.</p>`
+            : isProcessing
+              ? `<p style="color: #eab308; font-weight: bold; font-size: 18px;">Payment Successful! Your order is now processing.</p>
+                 <p>Our admins will manually review and complete your order shortly.</p>`
+              : isCancelled
+                ? `<p style="color: #dc2626; font-weight: bold; font-size: 18px;">Your order has been rejected or cancelled.</p>
+                   <p>If you have already paid, please contact support with your Transaction ID for a refund or manual processing.</p>`
+                : `<p>Thank you for your order! We have received your request and it is being processed.</p>
+                   <p>Deployment usually takes 5-30 minutes.</p>`
         }
         
         <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
