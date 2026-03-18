@@ -13,15 +13,23 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'bKash' | 'Nagad' | 'Rocket' | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<'ZiniPay' | 'bKash' | 'Nagad' | 'Rocket' | null>(null);
   const [transactionId, setTransactionId] = useState('');
   
   const total = cart.reduce((acc, item) => acc + item.price, 0);
 
   const handleCheckout = async () => {
     try {
-      if (!paymentMethod || !transactionId) {
-        alert("Please select a payment method and enter Transaction ID.");
+      if (!user) {
+        alert("Please login to place an order.");
+        return;
+      }
+      if (!paymentMethod) {
+        alert("Please select a payment method.");
+        return;
+      }
+      if (paymentMethod !== 'ZiniPay' && !transactionId) {
+        alert("Please enter Transaction ID.");
         return;
       }
 
@@ -30,20 +38,64 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
       
       const orderData = {
         id: orderId,
-        userId: user?.id || 'guest',
+        userId: user.id,
+        customerName: user.name,
         items: [...cart],
         totalAmount: total,
         status: 'PENDING' as const,
         createdAt: new Date().toISOString(),
-        transactionId: transactionId,
+        transactionId: paymentMethod === 'ZiniPay' ? 'PENDING_ZINIPAY' : transactionId,
         paymentMethod: paymentMethod
       };
 
       console.log("HGP DEBUG: Initiating checkout for order:", orderId);
+      
+      if (paymentMethod === 'ZiniPay') {
+        const redirectUrl = `${window.location.origin}/payment/success?orderId=${orderId}`;
+        const cancelUrl = `${window.location.origin}/payment/cancel?orderId=${orderId}`;
+        
+        const response = await fetch('/api/payment/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            amount: total,
+            redirect_url: redirectUrl,
+            cancel_url: cancelUrl,
+            webhook_url: `${window.location.origin}/api/payment/webhook`,
+            cus_email: user.email || 'guest@example.com',
+            cus_name: user.name || 'Guest',
+            metadata: { orderId }
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (data.status && data.payment_url) {
+          // Save order to DB before redirecting
+          const success = await addOrder(orderData);
+          if (!success) {
+            alert("Failed to save order. Please try again.");
+            setIsProcessing(false);
+            return;
+          }
+          sessionStorage.setItem('hgp_return_state', JSON.stringify({
+            isCartOpen: true
+          }));
+          window.location.href = data.payment_url;
+          return;
+        } else {
+          console.error("ZiniPay Error Data:", data);
+          alert("Failed to initialize payment gateway: " + (data.error || data.message || JSON.stringify(data)));
+          setIsProcessing(false);
+          return;
+        }
+      }
+
       const success = await addOrder(orderData);
       
       if (success) {
         setShowSuccess(true);
+        clearCart();
       } else {
         alert("Failed to place order. Please check your connection and try again.");
       }
@@ -51,7 +103,9 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
       console.error("HGP Checkout Error:", error);
       alert("Checkout Error: " + (error.message || "Unknown error occurred"));
     } finally {
-      setIsProcessing(false);
+      if (paymentMethod !== 'ZiniPay') {
+        setIsProcessing(false);
+      }
     }
   };
 
@@ -190,8 +244,8 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                     </button>
 
                     <div className="space-y-4">
-                      <div className="grid grid-cols-3 gap-3">
-                        {(['bKash', 'Nagad', 'Rocket'] as const).map((method) => (
+                      <div className="grid grid-cols-2 gap-3">
+                        {(['ZiniPay', 'bKash', 'Nagad', 'Rocket'] as const).map((method) => (
                           <button
                             key={method}
                             onClick={() => setPaymentMethod(method)}
@@ -201,12 +255,12 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                                 : 'bg-[#FAF9F6] border-black/10 text-slate-500 hover:border-black/20'
                             }`}
                           >
-                            {method}
+                            {method === 'ZiniPay' ? 'Auto Payment' : method}
                           </button>
                         ))}
                       </div>
 
-                      {paymentMethod && (
+                      {paymentMethod && paymentMethod !== 'ZiniPay' && (
                         <motion.div 
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}

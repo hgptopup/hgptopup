@@ -8,7 +8,7 @@ import { sendOrderNotification } from '../services/mailService';
 import { sendTelegramNotification } from '../services/telegramService';
 import { supabase } from '../services/supabaseClient';
 
-type DashboardTab = 'OPERATIONS' | 'ARMORY' | 'USERS' | 'VISUALS';
+type DashboardTab = 'OPERATIONS' | 'ARMORY' | 'USERS' | 'VISUALS' | 'BRANDING';
 
 const AdminDashboard: React.FC = () => {
   const { 
@@ -31,7 +31,10 @@ const AdminDashboard: React.FC = () => {
     fetchFloatingIcons,
     addFloatingIcon,
     updateFloatingIcon,
-    deleteFloatingIcon
+    deleteFloatingIcon,
+    logoUrl,
+    updateLogo,
+    setLogoUrl
   } = useStore();
   
   const [activeTab, setActiveTab] = useState<DashboardTab>('OPERATIONS');
@@ -123,7 +126,7 @@ const AdminDashboard: React.FC = () => {
     console.log("HGP DEBUG: Starting connection tests...");
     
     // 1. Test Database Connection
-    const { data: dbTest, error: dbError } = await supabase.from('profiles').select('count').single();
+    const { data: dbTest, error: dbError } = await supabase.from('profiles').select('id').limit(1).maybeSingle();
     if (dbError) {
       console.error("HGP DB ERROR:", dbError);
       alert(`Database Connection Failed: ${dbError.message}\n\nThis usually means your Supabase URL or Anon Key is incorrect.`);
@@ -137,7 +140,7 @@ const AdminDashboard: React.FC = () => {
     }
     
     const testOrder = allOrders[0];
-    const { data: profile } = await supabase.from('profiles').select('email, full_name').eq('id', testOrder.userId).single();
+    const { data: profile } = await supabase.from('profiles').select('email, full_name').eq('id', testOrder.userId).maybeSingle();
     
     console.log("HGP DEBUG: Testing edge functions for order:", testOrder.id);
     
@@ -178,10 +181,24 @@ const AdminDashboard: React.FC = () => {
   const handleSaveGame = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!gameFormData.title || !gameFormData.image) return alert("Title and Image are required.");
+    
     setIsSubmitting(true);
-    let result = editingGame ? await updateGame(editingGame.id, gameFormData) : await addGame(gameFormData);
-    if (result.success) { setShowGameModal(false); setEditingGame(null); }
-    else alert(`Save Failed: ${result.error}`);
+    
+    const finalData = { ...gameFormData };
+    // Auto-generate ID if missing for new games
+    if (!editingGame && !finalData.id) {
+      finalData.id = finalData.title.toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9-]/g, '') + '-' + Math.random().toString(36).substr(2, 5);
+    }
+
+    let result = editingGame ? await updateGame(editingGame.id, finalData) : await addGame(finalData);
+    if (result.success) { 
+      setShowGameModal(false); 
+      setEditingGame(null); 
+    } else {
+      alert(`Save Failed: ${result.error}`);
+    }
     setIsSubmitting(false);
   };
 
@@ -370,20 +387,6 @@ const AdminDashboard: React.FC = () => {
   const handleStatusChange = async (order: Order, newStatus: Order['status']) => {
     const success = await updateOrderStatus(order.id, newStatus);
     if (success && newStatus === 'COMPLETED') {
-      // Fetch user email for the order
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('email, full_name')
-        .eq('id', order.userId)
-        .single();
-
-      if (profile?.email) {
-        // Send completion email to user
-        const completionOrder = { ...order, status: 'COMPLETED' as const };
-        sendOrderNotification(completionOrder, profile.email, profile.full_name || 'Valued Customer')
-          .then(sent => console.log(sent ? "Completion email dispatched" : "Completion email failed"));
-      }
-
       // Send telegram notification to admin
       const telegramOrder = { ...order, status: 'COMPLETED' as const };
       sendTelegramNotification(telegramOrder)
@@ -397,7 +400,7 @@ const AdminDashboard: React.FC = () => {
         <div>
           <h1 className="text-4xl font-display font-bold mb-2 text-slate-900">Admin <span className="text-red-600">Console</span></h1>
           <div className="flex flex-wrap gap-4 mt-4">
-            {(['OPERATIONS', 'ARMORY', 'VISUALS', 'USERS'] as DashboardTab[]).map((tab) => (
+            {(['OPERATIONS', 'ARMORY', 'VISUALS', 'USERS', 'BRANDING'] as DashboardTab[]).map((tab) => (
               <button 
                 key={tab}
                 type="button"
@@ -454,13 +457,17 @@ const AdminDashboard: React.FC = () => {
                    <table className="w-full text-left">
                       <thead>
                          <tr className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-200">
-                            <th className="p-6">Order ID</th><th className="p-6">Payment</th><th className="p-6">Target Intel</th><th className="p-6">Status</th><th className="p-6">Amount</th><th className="p-6 text-right">Actions</th>
+                            <th className="p-6">Order ID</th><th className="p-6">Customer</th><th className="p-6">Payment</th><th className="p-6">Target Intel</th><th className="p-6">Status</th><th className="p-6">Amount</th><th className="p-6 text-right">Actions</th>
                          </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
                          {filteredOrders.map(order => (
                             <tr key={order.id} className="hover:bg-[#F0F0F0] transition-colors group cursor-pointer" onClick={() => setSelectedOrderDetails(order)}>
                                <td className="p-6 font-mono text-xs text-slate-400">{order.id}</td>
+                                <td className="p-6">
+                                  <div className="text-xs font-bold text-slate-900">{order.customerName || 'Guest'}</div>
+                                  <div className="text-[10px] text-slate-400 font-mono mt-1">{order.userId?.substring(0, 8)}...</div>
+                                </td>
                                <td className="p-6">
                                  <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{order.paymentMethod || 'N/A'}</div>
                                  <div className="text-[10px] font-mono text-red-600/60 mt-1">{order.transactionId || 'No TrxID'}</div>
@@ -550,7 +557,7 @@ const AdminDashboard: React.FC = () => {
           </motion.div>
         )}
 
-          {activeTab === 'USERS' && (
+        {activeTab === 'USERS' && (
           <motion.div key="users" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
             <div className="bg-[#FAF9F6] rounded-[2.5rem] border border-slate-200 overflow-hidden shadow-sm">
                 <div className="p-6 border-b border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4">
@@ -581,6 +588,7 @@ const AdminDashboard: React.FC = () => {
                  <div>
                    <p className="text-red-600 text-[10px] font-bold uppercase tracking-[0.4em] mb-2">Order Intelligence</p>
                    <h2 className="text-3xl font-display font-bold text-[#FAF9F6]">Ref: <span className="font-mono">{selectedOrderDetails.id}</span></h2>
+                   <p className="text-[#FAF9F6]/60 text-sm mt-2 font-medium">Customer: <span className="text-red-500 font-bold">{selectedOrderDetails.customerName || 'Guest'}</span></p>
                  </div>
                  <button onClick={() => setSelectedOrderDetails(null)} className="p-3 bg-[#FAF9F6]/5 hover:bg-[#FAF9F6]/10 rounded-2xl transition-all">
                     <svg className="w-6 h-6 text-[#FAF9F6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -737,8 +745,9 @@ const AdminDashboard: React.FC = () => {
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-[#FAF9F6] border border-black/10 rounded-[2.5rem] p-8 md:p-10 max-w-3xl w-full relative z-10 max-h-[90vh] overflow-y-auto shadow-2xl">
               <h2 className="text-2xl font-display font-bold mb-8 text-slate-900">Catalogue <span className="text-red-600">Configuration</span></h2>
               <form onSubmit={handleSaveGame} className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-6">
+                <div className="grid md:grid-cols-3 gap-6">
                   <div><label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">Title</label><input type="text" required value={gameFormData.title} onChange={e => setGameFormData({...gameFormData, title: e.target.value})} className="w-full bg-[#FAF9F6] border border-black/10 rounded-2xl py-4 px-5 text-sm outline-none focus:border-red-600 text-slate-900" /></div>
+                  <div><label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">Game ID / Slug</label><input type="text" placeholder="e.g. free-fire" value={gameFormData.id} onChange={e => setGameFormData({...gameFormData, id: e.target.value})} className="w-full bg-[#FAF9F6] border border-black/10 rounded-2xl py-4 px-5 text-sm outline-none focus:border-red-600 text-slate-900" disabled={!!editingGame} /></div>
                   <div><label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">Category</label><select value={gameFormData.category} onChange={e => setGameFormData({...gameFormData, category: e.target.value as any})} className="w-full bg-[#FAF9F6] border border-black/10 rounded-2xl py-4 px-5 text-sm text-slate-900"><option value="FPS">FPS</option><option value="MOBA">MOBA</option><option value="BATTLE_ROYALE">BATTLE_ROYALE</option><option value="RPG">RPG</option><option value="SPORTS">SPORTS</option></select></div>
                 </div>
                 <div><label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">Description</label><textarea value={gameFormData.description} onChange={e => setGameFormData({...gameFormData, description: e.target.value})} rows={3} className="w-full bg-[#FAF9F6] border border-black/10 rounded-2xl py-4 px-5 text-sm text-slate-900 resize-none focus:border-red-600" /></div>

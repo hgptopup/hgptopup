@@ -1,7 +1,5 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import axios from 'axios';
 import { Game, GamePackage, CartItem } from '../types';
 import { useStore } from '../store/useStore';
 import { LOGIN_METHODS } from '../constants';
@@ -29,24 +27,11 @@ const GameDetail: React.FC<GameDetailProps> = ({ game, onBack, onOpenAuth }) => 
   const currentMethod = availableLoginMethods.find(m => m.id === loginMethod) || availableLoginMethods[0] || LOGIN_METHODS[0];
   
   const [isAdded, setIsAdded] = useState(false);
-  const [showPayment, setShowPayment] = useState(false);
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [isProcessingOrder, setIsProcessingOrder] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'bKash' | 'Nagad' | 'Rocket' | null>(null);
-  const [transactionId, setTransactionId] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
   
   const { addToCart, isAuthenticated, addOrder, user } = useStore();
-
-  const paymentNumbers = {
-    bKash: "+8801878666388",
-    Nagad: "+8801878666388",
-    Rocket: "+8801878666388"
-  };
-
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    alert("Number copied to clipboard!");
-  };
 
   const validateEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   const validatePhone = (phone: string) => /^\d{10,15}$/.test(phone);
@@ -118,29 +103,36 @@ const GameDetail: React.FC<GameDetailProps> = ({ game, onBack, onOpenAuth }) => 
       return;
     }
     if (!validateInputs()) return;
-    addToCart(getCartItem());
-    setIsAdded(true);
-    setTimeout(() => setIsAdded(false), 2000);
+    
+    setIsAddingToCart(true);
+    
+    // Simulate a small delay for the animation
+    setTimeout(() => {
+      addToCart(getCartItem());
+      setIsAddingToCart(false);
+      setIsAdded(true);
+      setTimeout(() => setIsAdded(false), 2000);
+    }, 600);
   };
 
-  const handleBuyNow = () => {
+  const handleBuyNow = async () => {
     if (!isAuthenticated) {
       onOpenAuth();
       return;
     }
     if (!validateInputs()) return;
-    setShowPayment(true);
+    
+    await handleSubmitOrder();
   };
 
   const handleSubmitOrder = async () => {
     try {
-      if (!validateInputs()) return;
-      
-      if (!paymentMethod || !transactionId) {
-        alert("Please select a payment method and enter Transaction ID.");
+      if (!user) {
+        alert("Please login to place an order.");
         return;
       }
-
+      if (!validateInputs()) return;
+      
       setIsProcessingOrder(true);
       
       const item = getCartItem();
@@ -148,22 +140,54 @@ const GameDetail: React.FC<GameDetailProps> = ({ game, onBack, onOpenAuth }) => 
       
       const orderData = {
         id: orderId,
-        userId: user?.id || 'guest',
+        userId: user.id,
+        customerName: user.name,
         items: [item],
         totalAmount: item.price,
         status: 'PENDING' as const,
         createdAt: new Date().toISOString(),
-        transactionId: transactionId,
-        paymentMethod: paymentMethod
+        transactionId: 'PENDING_ZINIPAY',
+        paymentMethod: 'ZiniPay'
       };
 
       console.log("HGP DEBUG: Submitting order from GameDetail:", orderId);
-      const success = await addOrder(orderData);
+
+      const redirectUrl = `${window.location.origin}/payment/success?orderId=${orderId}`;
+      const cancelUrl = `${window.location.origin}/payment/cancel?orderId=${orderId}`;
       
-      if (success) {
-        setShowSuccess(true);
+      const response = await fetch('/api/payment/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: item.price,
+          redirect_url: redirectUrl,
+          cancel_url: cancelUrl,
+          webhook_url: `${window.location.origin}/api/payment/webhook`,
+          cus_email: user.email || 'guest@example.com',
+          cus_name: user.name || 'Guest',
+          metadata: { orderId }
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (data.status && data.payment_url) {
+        const success = await addOrder(orderData);
+        if (!success) {
+          alert("Failed to save order. Please try again.");
+          setIsProcessingOrder(false);
+          return;
+        }
+        sessionStorage.setItem('hgp_return_state', JSON.stringify({
+          selectedGame: game
+        }));
+        window.location.href = data.payment_url;
+        return;
       } else {
-        alert("Failed to place order. Please check your connection and try again.");
+        console.error("ZiniPay Error Data:", data);
+        alert("Failed to initialize payment gateway: " + (data.error || data.message || JSON.stringify(data)));
+        setIsProcessingOrder(false);
+        return;
       }
     } catch (error: any) {
       console.error("HGP Order Submission Error:", error);
@@ -335,128 +359,66 @@ const GameDetail: React.FC<GameDetailProps> = ({ game, onBack, onOpenAuth }) => 
             </AnimatePresence>
 
             {/* Checkout Area */}
-            <AnimatePresence>
-              {selectedPackage && isVerificationComplete && (
-                <motion.div 
-                  id="checkout-area"
-                  initial={{ opacity: 0, y: 20, height: 0 }} 
-                  animate={{ opacity: 1, y: 0, height: 'auto' }} 
-                  exit={{ opacity: 0, y: 20, height: 0 }}
-                  className="bg-[#FAF9F6] p-6 sm:p-8 rounded-lg border-2 border-red-600 shadow-[0_0_15px_rgba(220,38,38,0.3)] overflow-hidden"
-                >
-                  <AnimatePresence mode="wait">
-                    {showSuccess ? (
-                      <motion.div 
-                        key="success-message"
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="flex flex-col items-center justify-center text-center py-10"
-                      >
-                        <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mb-6 border border-green-500/30">
-                          <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                          </svg>
-                        </div>
-                        <h3 className="text-2xl font-display font-bold mb-2 text-slate-900">Order Successful</h3>
-                        <p className="text-slate-500 text-sm mb-8 px-6 font-medium leading-relaxed">
-                          We have received your payment intel. Deployment usually starts within 5-30 minutes. You can track this in your profile history.
-                        </p>
-                        <button onClick={onBack} className="w-full py-4 bg-green-600 hover:bg-green-700 text-[#FAF9F6] font-bold rounded-2xl transition-all shadow-xl shadow-green-600/20 uppercase tracking-widest text-xs">Return to Arena</button>
-                      </motion.div>
-                    ) : !showPayment ? (
-                      <div className="flex flex-col sm:flex-row gap-4">
-                        <button onClick={handleAddToCart} className="flex-1 py-4 bg-[#FAF9F6] border border-black/10 rounded-2xl font-bold hover:bg-[#F0F0F0] text-slate-900 transition-all uppercase tracking-widest text-xs">Add to Cart</button>
-                        <button onClick={handleBuyNow} className="flex-1 py-4 bg-red-600 rounded-2xl font-bold hover:bg-red-700 text-[#FAF9F6] shadow-xl shadow-red-600/20 transition-all uppercase tracking-widest text-xs">Buy Now</button>
-                      </div>
-                    ) : (
-                      <div className="space-y-6">
-                        <div className="text-center space-y-4">
-                          <button 
-                            onClick={() => setShowPayment(false)}
-                        className="text-xs font-bold text-red-600 uppercase tracking-widest flex items-center gap-2 hover:text-red-700 transition-colors mb-4"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
-                        </svg>
-                        Change Details
-                      </button>
-                      
-                      <div className="grid grid-cols-3 gap-3">
-                        {(['bKash', 'Nagad', 'Rocket'] as const).map((method) => (
-                          <button
-                            key={method}
-                            onClick={() => setPaymentMethod(method)}
-                            className={`p-3 rounded-xl border transition-all text-xs font-bold ${
-                              paymentMethod === method 
-                                ? 'bg-red-600 border-red-600 text-[#FAF9F6]' 
-                                : 'bg-[#FAF9F6] border-black/10 text-slate-500 hover:border-black/20'
-                            }`}
-                          >
-                            {method}
-                          </button>
-                        ))}
-                      </div>
-
-                      {paymentMethod && (
-                        <motion.div 
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="bg-white p-6 rounded-2xl border border-black/10 space-y-4 text-left shadow-sm"
-                        >
-                          <div className="flex justify-between items-center">
-                            <span className="text-xs text-slate-400 uppercase tracking-widest font-bold">Send Money to:</span>
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-mono text-slate-900 font-bold">{paymentNumbers[paymentMethod]}</span>
-                              <button 
-                                onClick={() => copyToClipboard(paymentNumbers[paymentMethod])}
-                                className="p-1.5 bg-[#FAF9F6] hover:bg-[#F0F0F0] rounded-lg transition-colors text-red-600"
-                                title="Copy Number"
-                              >
-                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                                </svg>
-                              </button>
-                            </div>
-                          </div>
-                          <div className="space-y-2">
-                            <label className="text-[10px] text-slate-400 uppercase tracking-widest font-bold block">Transaction ID</label>
-                            <input
-                              type="text"
-                              value={transactionId}
-                              onChange={(e) => setTransactionId(e.target.value)}
-                              placeholder="Enter TrxID after payment"
-                              className="w-full bg-[#FAF9F6] border border-black/10 rounded-xl py-4 px-5 text-sm focus:outline-none focus:border-red-600 transition-all text-slate-900 font-mono"
-                            />
-                          </div>
-                        </motion.div>
-                      )}
-
-                      <div className="bg-white p-6 rounded-2xl border border-black/5 text-center space-y-2 shadow-sm">
-                        <h3 className="text-lg font-bold text-slate-900">Manual Verification</h3>
-                        <p className="text-slate-500 text-xs leading-relaxed">
-                          Please send ৳{selectedPackage?.price} to the number above and provide the Transaction ID.
-                        </p>
-                      </div>
+            {selectedPackage && isVerificationComplete && (
+              <motion.div 
+                id="checkout-area"
+                initial={{ opacity: 0, y: 20, height: 0 }} 
+                animate={{ opacity: 1, y: 0, height: 'auto' }} 
+                exit={{ opacity: 0, y: 20, height: 0 }}
+                className="bg-[#FAF9F6] p-6 sm:p-8 rounded-lg border-2 border-red-600 shadow-[0_0_15px_rgba(220,38,38,0.3)] overflow-hidden"
+              >
+                {showSuccess ? (
+                  <motion.div 
+                    key="success-message"
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="flex flex-col items-center justify-center text-center py-10"
+                  >
+                    <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mb-6 border border-green-500/30">
+                      <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                      </svg>
                     </div>
-
-                    <button disabled={isProcessingOrder} onClick={handleSubmitOrder} className="w-full py-5 bg-red-600 hover:bg-red-700 text-[#FAF9F6] font-bold rounded-2xl transition-all shadow-xl shadow-red-600/20 flex items-center justify-center gap-3 uppercase tracking-widest text-xs">
-                      {isProcessingOrder ? (
-                        <div className="animate-spin h-5 w-5 border-2 border-[#FAF9F6] border-t-transparent rounded-full" />
+                    <h3 className="text-2xl font-display font-bold mb-2 text-slate-900">Order Successful</h3>
+                    <p className="text-slate-500 text-sm mb-8 px-6 font-medium leading-relaxed">
+                      We have received your payment intel. Deployment usually starts within 5-30 minutes. You can track this in your profile history.
+                    </p>
+                    <button onClick={onBack} className="w-full py-4 bg-green-600 hover:bg-green-700 text-[#FAF9F6] font-bold rounded-2xl transition-all shadow-xl shadow-green-600/20 uppercase tracking-widest text-xs">Return to Arena</button>
+                  </motion.div>
+                ) : (
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <motion.button 
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={handleAddToCart} 
+                      disabled={isAddingToCart || isProcessingOrder}
+                      className="flex-1 py-4 bg-[#FAF9F6] border border-black/10 rounded-2xl font-bold hover:bg-[#F0F0F0] text-slate-900 transition-all uppercase tracking-widest text-xs flex items-center justify-center gap-2"
+                    >
+                      {isAddingToCart ? (
+                        <div className="w-4 h-4 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" />
+                      ) : isAdded ? (
+                        "Added!"
                       ) : (
-                        <>
-                          <span>Submit Order</span>
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                        </>
+                        "Add to Cart"
                       )}
-                    </button>
+                    </motion.button>
+                    <motion.button 
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={handleBuyNow} 
+                      disabled={isAddingToCart || isProcessingOrder}
+                      className="flex-1 py-4 bg-red-600 rounded-2xl font-bold hover:bg-red-700 text-[#FAF9F6] shadow-xl shadow-red-600/20 transition-all uppercase tracking-widest text-xs flex items-center justify-center gap-2"
+                    >
+                      {isProcessingOrder ? (
+                        <div className="w-4 h-4 border-2 border-[#FAF9F6] border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        "Buy Now"
+                      )}
+                    </motion.button>
                   </div>
                 )}
-              </AnimatePresence>
-                </motion.div>
-              )}
-            </AnimatePresence>
+              </motion.div>
+            )}
           </div>
         </div>
       </div>

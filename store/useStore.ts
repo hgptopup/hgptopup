@@ -25,6 +25,7 @@ interface AppState {
   games: Game[];
   heroBanners: HeroBanner[];
   floatingIcons: FloatingIcon[];
+  logoUrl: string | null;
   cart: CartItem[];
   loading: boolean;
   dbError: string | null;
@@ -55,6 +56,11 @@ interface AppState {
   addFloatingIcon: (icon: Partial<FloatingIcon>) => Promise<{success: boolean, error?: string}>;
   updateFloatingIcon: (id: string, updates: Partial<FloatingIcon>) => Promise<{success: boolean, error?: string}>;
   deleteFloatingIcon: (id: string) => Promise<boolean>;
+  
+  fetchSiteSettings: () => Promise<void>;
+  updateLogo: (url: string) => Promise<boolean>;
+  setLogoUrl: (url: string | null) => void;
+  
   justCompletedOrder: boolean;
   setJustCompletedOrder: (val: boolean) => void;
 }
@@ -71,6 +77,7 @@ export const useStore = create<AppState>((set, get) => ({
   games: [],
   heroBanners: [],
   floatingIcons: [],
+  logoUrl: null,
   cart: [],
   loading: false,
   dbError: null,
@@ -84,7 +91,7 @@ export const useStore = create<AppState>((set, get) => ({
     }
 
     const isAdmin = sessionUser.email === ADMIN_EMAIL;
-    const { data: profile } = await supabase.from('profiles').select('*').eq('id', sessionUser.id).single();
+    const { data: profile } = await supabase.from('profiles').select('*').eq('id', sessionUser.id).maybeSingle();
     
     set({ 
       user: { 
@@ -101,52 +108,94 @@ export const useStore = create<AppState>((set, get) => ({
     await get().fetchGames();
     await get().fetchHeroBanners();
     await get().fetchFloatingIcons();
+    await get().fetchSiteSettings();
     await get().fetchOrders();
     if (isAdmin) {
       await get().fetchAllOrders();
       await get().fetchAllUsers();
+
+      // Real-time subscriptions for admin
+      supabase
+        .channel('admin-updates')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+          get().fetchAllUsers();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+          get().fetchAllOrders();
+        })
+        .subscribe();
     }
   },
   
   logout: async () => {
-    await supabase.auth.signOut();
+    try {
+      supabase.channel('admin-updates').unsubscribe();
+      await supabase.auth.signOut();
+    } catch (e) {
+      console.warn("Sign out error:", e);
+    }
     set({ user: null, isAuthenticated: false, isAdmin: false, orders: [], allOrders: [], allUsers: [], cart: [], justCompletedOrder: false });
   },
 
   fetchGames: async () => {
     try {
-      const { data, error } = await supabase.from('games').select('*').order('created_at', { ascending: false });
-      if (!error && data) {
-        set({ games: data });
-      }
-    } catch (e) {}
+      const response = await fetch('/api/public/games');
+      if (!response.ok) throw new Error('Failed to fetch games');
+      const data = await response.json();
+      set({ games: data });
+    } catch (e) {
+      console.error("HGP FETCH ERROR (fetchGames):", e);
+      // Fallback to direct Supabase if proxy fails
+      try {
+        const { data, error } = await supabase.from('games').select('*').order('created_at', { ascending: false });
+        if (!error && data) set({ games: data });
+      } catch (err) {}
+    }
   },
 
   fetchHeroBanners: async () => {
     try {
-      const { data, error } = await supabase.from('hero_banners').select('*').order('created_at', { ascending: false });
-      if (!error && data) set({ heroBanners: data });
-    } catch (e) {}
+      const response = await fetch('/api/public/hero-banners');
+      if (!response.ok) throw new Error('Failed to fetch hero banners');
+      const data = await response.json();
+      set({ heroBanners: data });
+    } catch (e) {
+      console.error("HGP FETCH ERROR (fetchHeroBanners):", e);
+      // Fallback
+      try {
+        const { data, error } = await supabase.from('hero_banners').select('*').order('created_at', { ascending: false });
+        if (!error && data) set({ heroBanners: data });
+      } catch (err) {}
+    }
   },
 
   addHeroBanner: async (banner) => {
     const { id, ...cleanBanner } = banner as any;
     const { error } = await supabase.from('hero_banners').insert([cleanBanner]);
-    if (error) return { success: false, error: error.message };
+    if (error) {
+      console.error("HGP DB ERROR (addHeroBanner):", error);
+      return { success: false, error: error.message };
+    }
     await get().fetchHeroBanners();
     return { success: true };
   },
 
   updateHeroBanner: async (id, updates) => {
     const { error } = await supabase.from('hero_banners').update(updates).eq('id', id);
-    if (error) return { success: false, error: error.message };
+    if (error) {
+      console.error("HGP DB ERROR (updateHeroBanner):", error);
+      return { success: false, error: error.message };
+    }
     await get().fetchHeroBanners();
     return { success: true };
   },
 
   deleteHeroBanner: async (id) => {
     const { error } = await supabase.from('hero_banners').delete().eq('id', id);
-    if (error) return false;
+    if (error) {
+      console.error("HGP DB ERROR (deleteHeroBanner):", error);
+      return false;
+    }
     await get().fetchHeroBanners();
     return true;
   },
@@ -159,47 +208,103 @@ export const useStore = create<AppState>((set, get) => ({
       set({ user: { ...user, profile_banner: url } });
       return true;
     }
+    console.error("HGP DB ERROR (updateProfileBanner):", error);
     return false;
   },
 
   fetchFloatingIcons: async () => {
     try {
-      const { data, error } = await supabase.from('hero_floating_icons').select('*').order('created_at', { ascending: false });
-      if (!error && data) set({ floatingIcons: data });
-    } catch (e) {}
+      const response = await fetch('/api/public/floating-icons');
+      if (!response.ok) throw new Error('Failed to fetch floating icons');
+      const data = await response.json();
+      set({ floatingIcons: data });
+    } catch (e) {
+      console.error("HGP FETCH ERROR (fetchFloatingIcons):", e);
+      // Fallback
+      try {
+        const { data, error } = await supabase.from('hero_floating_icons').select('*').order('created_at', { ascending: false });
+        if (!error && data) set({ floatingIcons: data });
+      } catch (err) {}
+    }
   },
 
   addFloatingIcon: async (icon) => {
     const { id, ...cleanIcon } = icon as any;
     const { error } = await supabase.from('hero_floating_icons').insert([cleanIcon]);
-    if (error) return { success: false, error: error.message };
+    if (error) {
+      console.error("HGP DB ERROR (addFloatingIcon):", error);
+      return { success: false, error: error.message };
+    }
     await get().fetchFloatingIcons();
     return { success: true };
   },
 
   updateFloatingIcon: async (id, updates) => {
     const { error } = await supabase.from('hero_floating_icons').update(updates).eq('id', id);
-    if (error) return { success: false, error: error.message };
+    if (error) {
+      console.error("HGP DB ERROR (updateFloatingIcon):", error);
+      return { success: false, error: error.message };
+    }
     await get().fetchFloatingIcons();
     return { success: true };
   },
 
   deleteFloatingIcon: async (id) => {
     const { error } = await supabase.from('hero_floating_icons').delete().eq('id', id);
-    if (error) return false;
+    if (error) {
+      console.error("HGP DB ERROR (deleteFloatingIcon):", error);
+      return false;
+    }
     await get().fetchFloatingIcons();
     return true;
   },
 
+  fetchSiteSettings: async () => {
+    try {
+      const response = await fetch('/api/public/site-settings');
+      if (!response.ok) throw new Error('Failed to fetch site settings');
+      const data = await response.json();
+      if (data) set({ logoUrl: data.logo_url });
+    } catch (e) {
+      console.error("HGP FETCH ERROR (fetchSiteSettings):", e);
+      // Fallback
+      try {
+        const { data, error } = await supabase.from('site_settings').select('logo_url').eq('id', 'main').maybeSingle();
+        if (!error && data) set({ logoUrl: data.logo_url });
+      } catch (err) {}
+    }
+  },
+  
+  updateLogo: async (url) => {
+    const { error } = await supabase.from('site_settings').upsert({ id: 'main', logo_url: url, updated_at: new Date().toISOString() });
+    if (!error) {
+      set({ logoUrl: url });
+      return true;
+    }
+    console.error("HGP DB ERROR (updateLogo):", error);
+    return false;
+  },
+  setLogoUrl: (logoUrl) => set({ logoUrl }),
+
   fetchAllUsers: async ( ) => {
     try {
       const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
-      if (!error && data) set({ allUsers: data });
-    } catch (e) {}
+      if (error) {
+        console.error("HGP DB ERROR (fetchAllUsers):", error);
+        return;
+      }
+      if (data) set({ allUsers: data });
+    } catch (e) {
+      console.error("HGP FETCH ERROR (fetchAllUsers):", e);
+    }
   },
 
   addGame: async (game) => {
-    const { error } = await supabase.from('games').insert([game]);
+    const gameData = { ...game };
+    if (!gameData.id) {
+      gameData.id = gameData.title?.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || `game-${Date.now()}`;
+    }
+    const { error } = await supabase.from('games').insert([gameData]);
     if (error) return { success: false, error: error.message };
     await get().fetchGames();
     return { success: true };
@@ -249,6 +354,7 @@ export const useStore = create<AppState>((set, get) => ({
       set({ orders: data.map(o => ({
         id: o.id,
         userId: o.user_id,
+        customerName: o.customer_name,
         items: o.items, 
         totalAmount: Number(o.total_amount),
         status: o.status,
@@ -272,6 +378,7 @@ export const useStore = create<AppState>((set, get) => ({
         set({ allOrders: data.map(o => ({
           id: o.id,
           userId: o.user_id,
+          customerName: o.customer_name,
           items: o.items, 
           totalAmount: Number(o.total_amount),
           status: o.status,
@@ -288,6 +395,103 @@ export const useStore = create<AppState>((set, get) => ({
   updateOrderStatus: async (orderId, status) => {
     const { error } = await supabase.from('orders').update({ status }).eq('id', orderId);
     if (!error) {
+      // If status is COMPLETED or CANCELLED, send email to user
+      if (status === 'COMPLETED' || status === 'CANCELLED') {
+        const order = get().allOrders.find(o => o.id === orderId);
+        const targetProfile = get().allUsers.find(u => u.id === order?.userId);
+        
+        if (order && targetProfile && targetProfile.email) {
+          try {
+            let pdfDataUri = undefined;
+            
+            // Only generate PDF for COMPLETED orders
+            if (status === 'COMPLETED') {
+              console.log("HGP DEBUG: Generating Completion PDF for user...");
+              const doc = new jsPDF();
+              
+              // Header Blue Bar
+              doc.setFillColor(15, 33, 71); // Dark Blue
+              doc.rect(0, 0, 210, 25, 'F');
+              
+              // Header Text
+              doc.setFontSize(24);
+              doc.setTextColor(255, 255, 255); // White
+              doc.setFont('helvetica', 'bold');
+              doc.text('Hasibul Game Point', 105, 17, { align: 'center' });
+              
+              // INVOICE Title
+              doc.setFontSize(20);
+              doc.setTextColor(0, 0, 0);
+              doc.text('INVOICE', 105, 45, { align: 'center' });
+              
+              // Order Information Section
+              doc.setFontSize(14);
+              doc.setFont('helvetica', 'bold');
+              doc.text('Order Information', 20, 60);
+              
+              doc.setFontSize(11);
+              doc.setFont('helvetica', 'normal');
+              doc.text(`Order ID: ${order.id}`, 20, 70);
+              doc.text(`Date: ${new Date(order.createdAt).toLocaleString()}`, 20, 78);
+              doc.text(`Customer: ${order.customerName || targetProfile.full_name}`, 20, 86);
+              doc.text(`Email: ${targetProfile.email}`, 20, 94);
+              
+              // Order Items Section
+              doc.setFontSize(14);
+              doc.setFont('helvetica', 'bold');
+              doc.text('Order Items', 20, 110);
+              
+              // Table Header
+              doc.setFillColor(245, 245, 245);
+              doc.rect(20, 118, 170, 10, 'F');
+              doc.rect(20, 118, 170, 10, 'S');
+              doc.line(140, 118, 140, 128); // Column separator
+              
+              doc.setFontSize(11);
+              doc.text('Item Description', 22, 125);
+              doc.text('Target ID', 142, 125);
+              
+              // Table Body
+              let y = 128;
+              order.items.forEach((item) => {
+                doc.rect(20, y, 170, 10, 'S');
+                doc.line(140, y, 140, y + 10);
+                doc.setFont('helvetica', 'normal');
+                doc.text(`${item.gameTitle} - ${item.packageName}`, 22, y + 7);
+                doc.text(`${item.playerId}`, 142, y + 7);
+                y += 10;
+              });
+              
+              // Payment Summary Section
+              y += 15;
+              doc.setFontSize(14);
+              doc.setFont('helvetica', 'bold');
+              doc.text('Payment Summary', 20, y);
+              
+              y += 10;
+              doc.setFontSize(11);
+              doc.setFont('helvetica', 'normal');
+              doc.text(`Total Amount: ${order.totalAmount} BDT`, 20, y);
+              doc.text(`Payment Method: ${order.paymentMethod}`, 20, y + 8);
+              doc.text(`Transaction ID: ${order.transactionId}`, 20, y + 16);
+              
+              // Footer
+              doc.setFontSize(10);
+              doc.setTextColor(100, 100, 100);
+              doc.text('Thank you for choosing HGP', 105, 280, { align: 'center' });
+              
+              pdfDataUri = doc.output('datauristring');
+            }
+            
+            // Send email to user (with status updated order)
+            const updatedOrder = { ...order, status };
+            await sendOrderNotification(updatedOrder, targetProfile.email, targetProfile.full_name || 'Customer', pdfDataUri);
+            console.log(`HGP DEBUG: ${status} email sent to user.`);
+          } catch (err) {
+            console.error(`HGP DEBUG: Failed to send ${status} email:`, err);
+          }
+        }
+      }
       await get().fetchAllOrders();
       return true;
     }
@@ -307,6 +511,7 @@ export const useStore = create<AppState>((set, get) => ({
     const { error: dbError } = await supabase.from('orders').insert([{
       id: order.id,
       user_id: user.id,
+      customer_name: order.customerName,
       items: order.items,
       total_amount: order.totalAmount,
       status: order.status,
@@ -325,43 +530,77 @@ export const useStore = create<AppState>((set, get) => ({
     try {
       console.log("HGP DEBUG: Generating PDF Receipt...");
       const doc = new jsPDF();
-      doc.setFontSize(22);
-      doc.setTextColor(234, 179, 8); // Gold color
-      doc.text('Hasibul Game Point', 20, 20);
       
-      doc.setFontSize(12);
+      // Header Blue Bar
+      doc.setFillColor(15, 33, 71); // Dark Blue
+      doc.rect(0, 0, 210, 25, 'F');
+      
+      // Header Text
+      doc.setFontSize(24);
+      doc.setTextColor(255, 255, 255); // White
+      doc.setFont('helvetica', 'bold');
+      doc.text('Hasibul Game Point', 105, 17, { align: 'center' });
+      
+      // INVOICE Title
+      doc.setFontSize(20);
       doc.setTextColor(0, 0, 0);
-      doc.text(`Order ID: ${order.id}`, 20, 40);
-      doc.text(`Date: ${new Date().toLocaleString()}`, 20, 50);
-      doc.text(`Customer: ${user.name}`, 20, 60);
-      doc.text(`Email: ${user.email}`, 20, 70);
+      doc.text('INVOICE', 105, 45, { align: 'center' });
       
-      doc.line(20, 75, 190, 75);
-      
+      // Order Information Section
       doc.setFontSize(14);
-      doc.text('Order Items:', 20, 85);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Order Information', 20, 60);
       
-      let y = 95;
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Order ID: ${order.id}`, 20, 70);
+      doc.text(`Date: ${new Date().toLocaleString()}`, 20, 78);
+      doc.text(`Customer: ${order.customerName || user.name}`, 20, 86);
+      doc.text(`Email: ${user.email}`, 20, 94);
+      
+      // Order Items Section
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Order Items', 20, 110);
+      
+      // Table Header
+      doc.setFillColor(245, 245, 245);
+      doc.rect(20, 118, 170, 10, 'F');
+      doc.rect(20, 118, 170, 10, 'S');
+      doc.line(140, 118, 140, 128); // Column separator
+      
+      doc.setFontSize(11);
+      doc.text('Item Description', 22, 125);
+      doc.text('Target ID', 142, 125);
+      
+      // Table Body
+      let y = 128;
       order.items.forEach((item) => {
-        doc.setFontSize(12);
-        doc.text(`${item.gameTitle} - ${item.packageName}`, 25, y);
-        doc.setFontSize(10);
-        doc.text(`Target ID: ${item.playerId}`, 30, y + 5);
-        y += 15;
+        doc.rect(20, y, 170, 10, 'S');
+        doc.line(140, y, 140, y + 10);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`${item.gameTitle} - ${item.packageName}`, 22, y + 7);
+        doc.text(`${item.playerId}`, 142, y + 7);
+        y += 10;
       });
       
-      doc.line(20, y, 190, y);
-      y += 10;
+      // Payment Summary Section
+      y += 15;
       doc.setFontSize(14);
-      doc.text(`Total Amount: ${order.totalAmount} BDT`, 20, y);
-      y += 10;
-      doc.text(`Payment Method: ${order.paymentMethod}`, 20, y);
-      y += 10;
-      doc.text(`Transaction ID: ${order.transactionId}`, 20, y);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Payment Summary', 20, y);
       
+      y += 10;
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Total Amount: ${order.totalAmount} BDT`, 20, y);
+      doc.text(`Payment Method: ${order.paymentMethod}`, 20, y + 8);
+      doc.text(`Transaction ID: ${order.transactionId}`, 20, y + 16);
+      
+      // Footer
       doc.setFontSize(10);
-      doc.setTextColor(150, 150, 150);
-      doc.text('Thank you for choosing HGP Gold Protocol.', 20, y + 20);
+      doc.setTextColor(100, 100, 100);
+      doc.text('Thank you for choosing HGP', 105, 280, { align: 'center' });
       
       pdfDataUri = doc.output('datauristring');
       console.log("HGP DEBUG: PDF Generation Success.");
@@ -374,14 +613,17 @@ export const useStore = create<AppState>((set, get) => ({
     console.log("HGP DEBUG: Triggering notifications...");
     
     // Admin: Telegram Only
-    sendTelegramNotification(order).then(res => 
+    const telegramPromise = sendTelegramNotification(order).then(res => 
       console.log(`HGP DEBUG: Telegram notification result: ${res ? 'SUCCESS' : 'FAILED'}`)
     );
-    
-    // User: Email with PDF
-    sendOrderNotification(order, user.email, user.name, pdfDataUri).then(res => 
-      console.log(`HGP DEBUG: User email notification result: ${res ? 'SUCCESS' : 'FAILED'}`)
+
+    // Admin: Email Alert
+    const adminEmailPromise = sendOrderNotification(order, ADMIN_EMAIL, 'Admin', pdfDataUri, true).then(res =>
+      console.log(`HGP DEBUG: Admin email notification result: ${res ? 'SUCCESS' : 'FAILED'}`)
     );
+    
+    // Await notifications so they don't get cancelled by page navigation (e.g., ZiniPay redirect)
+    await Promise.allSettled([telegramPromise, adminEmailPromise]);
 
     get().clearCart();
     await get().fetchOrders();

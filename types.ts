@@ -56,6 +56,7 @@ export interface CartItem {
 export interface Order {
   id: string;
   userId: string;
+  customerName?: string;
   items: CartItem[];
   totalAmount: number;
   status: 'PENDING' | 'COMPLETED' | 'CANCELLED';

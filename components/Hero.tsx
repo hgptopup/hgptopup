@@ -1,21 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useStore } from '../store/useStore';
 import Joystick3D from './Joystick3D';
 
-const DEFAULT_SLIDES = [
-  {
-    id: 'default-1',
-    title: "Legendary Game Top-Ups",
-    tag: "Official Store",
-    image_url: "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=2070&auto=format&fit=crop"
-  }
-];
-
 const Hero: React.FC = () => {
-  const { heroBanners, fetchHeroBanners, floatingIcons, fetchFloatingIcons } = useStore();
-  const [currentSlide, setCurrentSlide] = useState(0);
+  const { floatingIcons, fetchFloatingIcons } = useStore();
   
   // Typewriter state
   const [displayText, setDisplayText] = useState('');
@@ -49,21 +38,9 @@ const Hero: React.FC = () => {
     return () => clearTimeout(timer);
   }, [displayText, isDeleting, loopNum, typingSpeed]);
 
-  // Use DB slides if available, otherwise fallback to default
-  const slides = heroBanners && heroBanners.length > 0 ? heroBanners : DEFAULT_SLIDES;
-
   useEffect(() => {
-    fetchHeroBanners();
     fetchFloatingIcons();
-  }, [fetchHeroBanners, fetchFloatingIcons]);
-
-  useEffect(() => {
-    if (slides.length <= 1) return;
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % slides.length);
-    }, 5000);
-    return () => clearInterval(timer);
-  }, [slides.length]);
+  }, [fetchFloatingIcons]);
 
   return (
     <section className="relative min-h-[90vh] pt-32 pb-20 flex items-center justify-center overflow-hidden">
@@ -76,7 +53,7 @@ const Hero: React.FC = () => {
         <motion.div
           initial={{ opacity: 0, x: -30 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.8 }}
+          transition={{ duration: 0.4 }}
           className="order-2 lg:order-1"
         >
           <div className="inline-flex items-center space-x-2 px-4 py-2 bg-[#FAF9F6] border border-red-600/20 rounded-full text-red-600 font-bold text-[10px] mb-8 uppercase tracking-[0.2em] shadow-sm">
@@ -106,16 +83,11 @@ const Hero: React.FC = () => {
 
         {/* 3D Joystick and Visuals */}
         <div className="order-1 lg:order-2 relative flex items-center justify-center">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 1, delay: 0.2 }}
-            className="relative"
-          >
+          <motion.div className="relative">
             <Joystick3D />
             
             {/* Floating Elements */}
-            {floatingIcons && floatingIcons.length > 0 ? (
+            {floatingIcons && floatingIcons.length > 0 && (
               floatingIcons.map((icon, idx) => {
                 const positionClasses: Record<string, string> = {
                   'top-left': '-top-2 -left-2 md:-top-10 md:-left-10',
@@ -129,12 +101,14 @@ const Hero: React.FC = () => {
                 return (
                   <motion.div 
                     key={icon.id}
-                    animate={{ y: [0, idx % 2 === 0 ? -20 : 20, 0] }}
+                    animate={{ 
+                      y: [0, idx % 2 === 0 ? -20 : 20, 0] 
+                    }}
                     transition={{ 
                       duration: Number(icon.duration) || 4, 
                       repeat: Infinity, 
                       ease: "easeInOut",
-                      delay: (Number(icon.delay) || 0) + (idx * 0.2)
+                      delay: idx * 0.05
                     }}
                     className={`absolute ${positionClasses[icon.position || 'top-right']} w-16 h-16 md:w-20 md:h-20 bg-[#FAF9F6]/40 backdrop-blur-md rounded-2xl border border-slate-200 flex items-center justify-center shadow-xl z-20`}
                   >
@@ -153,24 +127,6 @@ const Hero: React.FC = () => {
                   </motion.div>
                 );
               })
-            ) : (
-              <>
-                <motion.div 
-                  animate={{ y: [0, -20, 0] }}
-                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                  className="absolute -top-4 -right-4 md:-top-10 md:-right-10 w-16 h-16 md:w-24 md:h-24 bg-[#FAF9F6]/40 backdrop-blur-md rounded-2xl border border-slate-200 flex items-center justify-center shadow-xl"
-                >
-                  <div className="text-2xl md:text-3xl">💎</div>
-                </motion.div>
-                
-                <motion.div 
-                  animate={{ y: [0, 20, 0] }}
-                  transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-                  className="absolute -bottom-4 -left-4 md:-bottom-10 md:-left-10 w-16 h-16 md:w-24 md:h-24 bg-[#FAF9F6]/40 backdrop-blur-md rounded-2xl border border-slate-200 flex items-center justify-center shadow-xl"
-                >
-                  <div className="text-2xl md:text-3xl">🎮</div>
-                </motion.div>
-              </>
             )}
           </motion.div>
         </div>

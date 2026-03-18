@@ -1,5 +1,7 @@
 
 import React from 'react';
+import { Link } from 'react-router-dom';
+import { useStore } from '../store/useStore';
 
 interface FooterProps {
   onOpenTerms?: () => void;
@@ -9,18 +11,18 @@ interface FooterProps {
 }
 
 const Footer: React.FC<FooterProps> = ({ onOpenTerms, onOpenRefund, onOpenHelp, onOpenSupport }) => {
+  const { logoUrl } = useStore();
   return (
     <footer className="bg-[#0B0B0F] border-t border-[#FAF9F6]/5 pt-20 pb-10 relative z-10">
       <div className="max-w-7xl mx-auto px-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
           <div className="col-span-1 md:col-span-2">
              <div className="flex items-center space-x-2 mb-6">
-              <div className="w-12 h-8 bg-red-600 rounded-lg flex items-center justify-center font-display font-bold text-xs px-2 text-[#FAF9F6] shadow-lg">
-                HGP
-              </div>
-              <span className="text-2xl font-display font-bold text-[#FAF9F6]">
-                Hasibul <span className="text-red-600">Game Point</span>
-              </span>
+              <Link to="/" className="flex items-center space-x-2">
+                <span className="text-2xl font-display font-bold text-[#FAF9F6]">
+                  Hasibul <span className="text-red-600">Game Point</span>
+                </span>
+              </Link>
             </div>
             <p className="text-slate-500 max-w-sm">
               Hasibul Game Point - The ultimate destination for gamers to recharge their favorite games instantly. Fast, secure, and reliable.
@@ -29,9 +31,10 @@ const Footer: React.FC<FooterProps> = ({ onOpenTerms, onOpenRefund, onOpenHelp, 
           <div>
             <h4 className="font-bold mb-6 text-[#FAF9F6] uppercase tracking-widest text-sm">Support</h4>
             <ul className="space-y-4 text-slate-400">
-              <li><button onClick={onOpenHelp} className="hover:text-red-500 transition-colors text-left font-bold">Help Center</button></li>
-              <li><button onClick={onOpenRefund} className="hover:text-red-500 transition-colors text-left font-bold">Refund Policy</button></li>
-              <li><button onClick={onOpenTerms} className="hover:text-red-500 transition-colors text-left font-bold">Terms of Service</button></li>
+              <li><Link to="/help" className="hover:text-red-500 transition-colors text-left font-bold block">Help Center</Link></li>
+              <li><Link to="/payment" className="hover:text-red-500 transition-colors text-left font-bold block">Payment</Link></li>
+              <li><Link to="/refund" className="hover:text-red-500 transition-colors text-left font-bold block">Refund Policy</Link></li>
+              <li><Link to="/terms" className="hover:text-red-500 transition-colors text-left font-bold block">Terms of Service</Link></li>
             </ul>
           </div>
           <div>
@@ -44,24 +47,10 @@ const Footer: React.FC<FooterProps> = ({ onOpenTerms, onOpenRefund, onOpenHelp, 
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.14-.25.25-.51.25l.213-3.054 5.56-5.022c.24-.213-.054-.33-.373-.12l-6.87 4.326-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.458c.538-.196 1.006.128.832.941z"/></svg>
               </a>
             </div>
-            
-            <div className="bg-gradient-to-br from-[#FAF9F6]/5 to-transparent border border-[#FAF9F6]/10 rounded-2xl p-4 inline-flex flex-col items-center">
-              <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-2 font-bold">Developed By</p>
-              <a href="https://www.facebook.com/hasibulgamepoint2" target="_blank" rel="noopener noreferrer" className="group">
-                <div className="px-4 py-1.5 rounded bg-red-600/20 text-red-500 flex items-center justify-center font-bold text-xs group-hover:bg-red-600 group-hover:text-white transition-all">
-                  HGP
-                </div>
-              </a>
-            </div>
           </div>
         </div>
         <div className="flex flex-col md:flex-row justify-between items-center text-slate-500 text-sm border-t border-[#FAF9F6]/5 pt-8">
-          <p>© 2024 Hasibul Game Point. All rights reserved.</p>
-          <div className="flex space-x-6 mt-4 md:mt-0">
-            <img src="https://img.icons8.com/color/48/000000/visa.png" className="h-6 grayscale opacity-20" alt="Visa" />
-            <img src="https://img.icons8.com/color/48/000000/mastercard.png" className="h-6 grayscale opacity-20" alt="Mastercard" />
-            <img src="https://img.icons8.com/color/48/000000/paypal.png" className="h-6 grayscale opacity-20" alt="Paypal" />
-          </div>
+          <p>© 2026 Hasibul Game Point. All rights reserved.</p>
         </div>
       </div>
     </footer>
