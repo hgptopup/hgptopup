@@ -10,161 +10,168 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-async function startServer() {
-  const app = express();
-  const PORT = 3000;
+const app = express();
 
-  app.use(cors());
-  app.use(express.json({ limit: '10mb' }));
-  app.use(express.urlencoded({ limit: '10mb', extended: true }));
+app.use(cors());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-  // Notification Credentials
-  const SMTP_HOSTNAME = process.env.SMTP_HOSTNAME || 'smtp.gmail.com';
-  const SMTP_PORT = parseInt(process.env.SMTP_PORT || '587');
-  const SMTP_USERNAME = process.env.SMTP_USERNAME || 'hasibulgamepoint02@gmail.com';
-  const SMTP_PASSWORD = process.env.SMTP_PASSWORD || 'lwri taoi ugqg dzrk';
-  const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8510422259:AAEY1ueGulFXmT-HDkxxLG60TbJWGdu7hPg';
-  const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || '5067614518';
+// Notification Credentials
+const SMTP_HOSTNAME = process.env.SMTP_HOSTNAME || 'smtp.gmail.com';
+const SMTP_PORT = parseInt(process.env.SMTP_PORT || '587');
+const SMTP_USERNAME = process.env.SMTP_USERNAME || 'hasibulgamepoint02@gmail.com';
+const SMTP_PASSWORD = process.env.SMTP_PASSWORD || 'lwri taoi ugqg dzrk';
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '8510422259:AAEY1ueGulFXmT-HDkxxLG60TbJWGdu7hPg';
+const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || '5067614518';
 
-  // ZiniPay API Key
-  const ZINIPAY_API_KEY = process.env.ZINIPAY_API_KEY || '8cd7a947713ac7f4ffc28131022d9102de9aacb54d3c0121';
+// ZiniPay API Key
+const ZINIPAY_API_KEY = process.env.ZINIPAY_API_KEY || '8cd7a947713ac7f4ffc28131022d9102de9aacb54d3c0121';
 
-  // Telegram Notification Helper
-  const sendTelegramNotification = async (order: any) => {
-    try {
-      const escapeHTML = (str: string) => {
-        if (!str) return '';
-        return str
-          .toString()
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;')
-          .replace(/"/g, '&quot;')
-          .replace(/'/g, '&#039;');
-      };
+// Telegram Notification Helper
+const sendTelegramNotification = async (order: any) => {
+  try {
+    const escapeHTML = (str: string) => {
+      if (!str) return '';
+      return str
+        .toString()
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    };
 
-      const status = order.status || order.order_status;
-      const isCompleted = status === 'COMPLETED';
-      const isCancelled = status === 'CANCELLED';
-      
-      let message = '';
-      if (isCancelled) {
-        message = `<b>❌ ORDER CANCELLED</b>\n`;
-      } else if (isCompleted) {
-        message = `<b>✅ PAYMENT COMPLETED</b>\n`;
-      } else {
-        message = `<b>🚨 NEW ORDER RECEIVED</b>\n`;
-      }
-      
-      message += `<code>REF: ${escapeHTML(order.id)}</code>\n`;
-      message += `━━━━━━━━━━━━━━━━━━━━\n\n`;
+    const status = order.status || order.order_status;
+    const isCompleted = status === 'COMPLETED';
+    const isCancelled = status === 'CANCELLED';
+    
+    let message = '';
+    if (isCancelled) {
+      message = `<b>❌ ORDER CANCELLED</b>\n`;
+    } else if (isCompleted) {
+      message = `<b>✅ PAYMENT COMPLETED</b>\n`;
+    } else {
+      message = `<b>🚨 NEW ORDER RECEIVED</b>\n`;
+    }
+    
+    message += `<code>REF: ${escapeHTML(order.id)}</code>\n`;
+    message += `━━━━━━━━━━━━━━━━━━━━\n\n`;
 
-      const totalAmount = order.totalAmount || order.total_amount || 0;
-      const paymentMethod = order.paymentMethod || order.payment_method || 'N/A';
-      const transactionId = order.transactionId || order.transaction_id || 'N/A';
-      const customerName = order.customerName || order.customer_name || order.userId || order.user_id || 'Guest';
+    const totalAmount = order.totalAmount || order.total_amount || 0;
+    const paymentMethod = order.paymentMethod || order.payment_method || 'N/A';
+    const transactionId = order.transactionId || order.transaction_id || 'N/A';
+    const customerName = order.customerName || order.customer_name || order.userId || order.user_id || 'Guest';
 
-      message += `<b>👤 CUSTOMER:</b> <code>${escapeHTML(customerName)}</code>\n`;
-      message += `<b>💵 TOTAL:</b> ৳${totalAmount}\n`;
-      message += `<b>💳 METHOD:</b> ${escapeHTML(paymentMethod)}\n`;
-      message += `<b>🔑 TRX ID:</b> <code>${escapeHTML(transactionId)}</code>\n\n`;
-      
-      const items = order.items || [];
-      if (Array.isArray(items) && items.length > 0) {
-        message += `<b>📦 PRODUCTS:</b>\n`;
-        items.forEach((item: any) => {
-          const gameTitle = item.gameTitle || item.game_title || item.title || 'Unknown Game';
-          const packageName = item.packageName || item.package_name || item.package || 'Unknown Package';
-          const playerId = item.playerId || item.player_id || item.uid || 'N/A';
-          const loginMethod = item.loginMethod || item.login_method || 'N/A';
-          
-          message += `• ${escapeHTML(gameTitle)} - ${escapeHTML(packageName)}\n`;
-          message += `  ID: <code>${escapeHTML(playerId)}</code> | ${escapeHTML(loginMethod)}\n`;
-          if (item.password) message += `  PW: <code>${escapeHTML(item.password)}</code>\n`;
-          message += `\n`;
-        });
-      } else if (typeof items === 'string') {
-        // Handle case where items might be a string (though it shouldn't be)
-        message += `<b>📦 PRODUCTS:</b>\n<code>${escapeHTML(items)}</code>\n\n`;
-      }
-
-      message += `━━━━━━━━━━━━━━━━━━━━\n`;
-      message += `<b>🕒 TIME:</b> ${new Date().toLocaleString('en-BD')}\n\n`;
-      
-      if (isCompleted) {
-        message += `<i>Payment verified. Please process the top-up.</i>`;
-      } else if (isCancelled) {
-        message += `<i>Order was cancelled by user or system.</i>`;
-      } else {
-        message += `<i>Awaiting payment or manual processing.</i>`;
-      }
-
-      const telegramUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
-      
-      await axios.post(telegramUrl, {
-        chat_id: TELEGRAM_CHAT_ID,
-        text: message,
-        parse_mode: 'HTML'
+    message += `<b>👤 CUSTOMER:</b> <code>${escapeHTML(customerName)}</code>\n`;
+    message += `<b>💵 TOTAL:</b> ৳${totalAmount}\n`;
+    message += `<b>💳 METHOD:</b> ${escapeHTML(paymentMethod)}\n`;
+    message += `<b>🔑 TRX ID:</b> <code>${escapeHTML(transactionId)}</code>\n\n`;
+    
+    const items = order.items || [];
+    if (Array.isArray(items) && items.length > 0) {
+      message += `<b>📦 PRODUCTS:</b>\n`;
+      items.forEach((item: any) => {
+        const gameTitle = item.gameTitle || item.game_title || item.title || 'Unknown Game';
+        const packageName = item.packageName || item.package_name || item.package || 'Unknown Package';
+        const playerId = item.playerId || item.player_id || item.uid || 'N/A';
+        const loginMethod = item.loginMethod || item.login_method || 'N/A';
+        
+        message += `• ${escapeHTML(gameTitle)} - ${escapeHTML(packageName)}\n`;
+        message += `  ID: <code>${escapeHTML(playerId)}</code> | ${escapeHTML(loginMethod)}\n`;
+        if (item.password) message += `  PW: <code>${escapeHTML(item.password)}</code>\n`;
+        message += `\n`;
       });
-
-      return { success: true };
-    } catch (error: any) {
-      console.error("Telegram Notification Helper Error:", error.message);
-      return { success: false, error: error.message };
+    } else if (typeof items === 'string') {
+      // Handle case where items might be a string (though it shouldn't be)
+      message += `<b>📦 PRODUCTS:</b>\n<code>${escapeHTML(items)}</code>\n\n`;
     }
-  };
 
-  // Supabase Client (Server-side)
-  const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://xcxdkplxrxsuuwebpnyx.supabase.co';
-  // Use Service Role Key if available to bypass RLS for webhooks, otherwise fallback to Anon Key
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhjeGRrcGx4cnhzdXV3ZWJwbnl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0ODIwNzksImV4cCI6MjA4NzA1ODA3OX0.me1hIWuzeisbb9uBgBUSvHtQkYFMetDcrZ71XJJ68nM';
-  const supabase = createClient(supabaseUrl, supabaseKey);
-
-  // Proxy Routes for Public Data (to avoid client-side fetch errors)
-  app.get("/api/public/games", async (req, res) => {
-    try {
-      const { data, error } = await supabase.from('games').select('*').order('created_at', { ascending: false });
-      if (error) throw error;
-      res.json(data);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
+    message += `━━━━━━━━━━━━━━━━━━━━\n`;
+    message += `<b>🕒 TIME:</b> ${new Date().toLocaleString('en-BD')}\n\n`;
+    
+    if (isCompleted) {
+      message += `<i>Payment verified. Please process the top-up.</i>`;
+    } else if (isCancelled) {
+      message += `<i>Order was cancelled by user or system.</i>`;
+    } else {
+      message += `<i>Awaiting payment or manual processing.</i>`;
     }
-  });
 
-  app.get("/api/public/hero-banners", async (req, res) => {
-    try {
-      const { data, error } = await supabase.from('hero_banners').select('*').order('created_at', { ascending: false });
-      if (error) throw error;
-      res.json(data);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
+    const telegramUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+    
+    await axios.post(telegramUrl, {
+      chat_id: TELEGRAM_CHAT_ID,
+      text: message,
+      parse_mode: 'HTML'
+    });
 
-  app.get("/api/public/floating-icons", async (req, res) => {
-    try {
-      const { data, error } = await supabase.from('hero_floating_icons').select('*').order('created_at', { ascending: false });
-      if (error) throw error;
-      res.json(data);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
+    return { success: true };
+  } catch (error: any) {
+    console.error("Telegram Notification Helper Error:", error.message);
+    return { success: false, error: error.message };
+  }
+};
 
-  app.get("/api/public/site-settings", async (req, res) => {
-    try {
-      const { data, error } = await supabase.from('site_settings').select('logo_url').eq('id', 'main').maybeSingle();
-      if (error) throw error;
-      res.json(data);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
-  });
+// Supabase Client (Server-side)
+const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://xcxdkplxrxsuuwebpnyx.supabase.co';
+// Use Service Role Key if available to bypass RLS for webhooks, otherwise fallback to Anon Key
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhjeGRrcGx4cnhzdXV3ZWJwbnl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0ODIwNzksImV4cCI6MjA4NzA1ODA3OX0.me1hIWuzeisbb9uBgBUSvHtQkYFMetDcrZ71XJJ68nM';
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+// Proxy Routes for Public Data (to avoid client-side fetch errors)
+app.get("/api/public/games", async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('games').select('*').order('created_at', { ascending: false });
+    if (error) throw error;
+    res.json(data);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/api/public/hero-banners", async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('hero_banners').select('*').order('created_at', { ascending: false });
+    if (error) throw error;
+    res.json(data);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/api/public/floating-icons", async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('hero_floating_icons').select('*').order('created_at', { ascending: false });
+    if (error) throw error;
+    res.json(data);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/api/public/site-settings", async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('site_settings').select('logo_url').eq('id', 'main').maybeSingle();
+    if (error) throw error;
+    res.json(data);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+async function startServer() {
+  const PORT = 3000;
 
   // ZiniPay Create Payment Route
   app.post("/api/payment/create", async (req, res) => {
     try {
+      console.log("HGP DEBUG: /api/payment/create called with body:", JSON.stringify(req.body));
       const { amount, redirect_url, cancel_url, webhook_url, cus_email, cus_name, metadata } = req.body;
+
+      if (!amount) {
+        console.error("HGP ERROR: Missing amount in payment request");
+        return res.status(400).json({ success: false, error: "Missing amount" });
+      }
 
       const payload = {
         amount: amount.toString(),
@@ -176,10 +183,10 @@ async function startServer() {
         metadata: { ...metadata, phone: "01700000000" }
       };
       
-      console.log("Sending ZiniPay Payload:", payload);
+      console.log("HGP DEBUG: Sending ZiniPay Payload:", JSON.stringify(payload));
 
       if (ZINIPAY_API_KEY === '8cd7a947713ac7f4ffc28131022d9102de9aacb54d3c0121') {
-        console.warn("WARNING: Using default/test ZiniPay API Key. This may fail on the live endpoint.");
+        console.warn("HGP WARNING: Using default/test ZiniPay API Key. This may fail on the live endpoint.");
       }
 
       const response = await axios.post('https://api.zinipay.com/v1/payment/create', payload, {
@@ -189,10 +196,10 @@ async function startServer() {
         }
       });
 
-      console.log("ZiniPay Create Success:", response.data);
+      console.log("HGP DEBUG: ZiniPay Create Success Response:", JSON.stringify(response.data));
       res.json(response.data);
     } catch (error: any) {
-      console.error("ZiniPay Create Error:", error.response?.data || error.message);
+      console.error("HGP ERROR: ZiniPay Create Error:", error.response?.data || error.message);
       res.status(500).json({ 
         success: false, 
         error: error.response?.data || error.message,
@@ -479,9 +486,13 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
+  if (process.env.NODE_ENV !== "production" && process.env.VERCEL !== "1") {
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+    });
+  }
 }
 
 startServer();
+
+export default app;

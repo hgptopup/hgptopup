@@ -169,6 +169,12 @@ const GameDetail: React.FC<GameDetailProps> = ({ game, onBack, onOpenAuth }) => 
         })
       });
       
+      if (!response.ok) {
+        const text = await response.text();
+        console.error("HGP Server Error Response:", text);
+        throw new Error(`Server returned ${response.status}: ${text.slice(0, 100)}...`);
+      }
+      
       const data = await response.json();
       
       if (data.status && data.payment_url) {
