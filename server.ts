@@ -3,7 +3,6 @@ import cors from "cors";
 import axios from "axios";
 import nodemailer from "nodemailer";
 import { createClient } from '@supabase/supabase-js';
-import { createServer as createViteServer } from "vite";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -159,291 +158,292 @@ app.get("/api/public/site-settings", async (req, res) => {
   }
 });
 
+// ZiniPay Create Payment Route
+app.post("/api/payment/create", async (req, res) => {
+  try {
+    console.log("HGP DEBUG: /api/payment/create called with body:", JSON.stringify(req.body));
+    const { amount, redirect_url, cancel_url, webhook_url, cus_email, cus_name, metadata } = req.body;
+
+    if (!amount) {
+      console.error("HGP ERROR: Missing amount in payment request");
+      return res.status(400).json({ success: false, error: "Missing amount" });
+    }
+
+    const payload = {
+      amount: amount.toString(),
+      redirect_url,
+      cancel_url,
+      webhook_url,
+      cus_email: cus_email || "guest@example.com",
+      cus_name: cus_name || "Guest",
+      metadata: { ...metadata, phone: "01700000000" }
+    };
+    
+    console.log("HGP DEBUG: Sending ZiniPay Payload:", JSON.stringify(payload));
+
+    if (ZINIPAY_API_KEY === '8cd7a947713ac7f4ffc28131022d9102de9aacb54d3c0121') {
+      console.warn("HGP WARNING: Using default/test ZiniPay API Key. This may fail on the live endpoint.");
+    }
+
+    const response = await axios.post('https://api.zinipay.com/v1/payment/create', payload, {
+      headers: {
+        'zini-api-key': ZINIPAY_API_KEY,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    console.log("HGP DEBUG: ZiniPay Create Success Response:", JSON.stringify(response.data));
+    res.json(response.data);
+  } catch (error: any) {
+    console.error("HGP ERROR: ZiniPay Create Error:", error.response?.data || error.message);
+    res.status(500).json({ 
+      success: false, 
+      error: error.response?.data || error.message,
+      details: "Please check your ZiniPay API Key and ensure your domain is whitelisted."
+    });
+  }
+});
+
+// ZiniPay Verify Payment Route
+app.post("/api/payment/verify", async (req, res) => {
+  try {
+    const { invoiceId } = req.body;
+
+    const response = await axios.post('https://api.zinipay.com/v1/payment/verify', {
+      invoiceId,
+      apiKey: ZINIPAY_API_KEY
+    }, {
+      headers: {
+        'zini-api-key': ZINIPAY_API_KEY,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    const data = response.data;
+    const status = data.status || data.payment_status || data.data?.status;
+    const isSuccess = ['success', 'COMPLETED', 'completed', 'PAID', 'paid'].includes(status);
+    
+    // Extract orderId from metadata if available
+    const metadata = data.metadata || data.data?.metadata;
+    const orderId = metadata?.orderId || data.orderId || data.order_id;
+
+    if (isSuccess && orderId) {
+      // Use the secure RPC function to update the order and bypass RLS
+      const { data: rpcResult, error: rpcError } = await supabase.rpc('complete_payment', {
+        p_order_id: orderId,
+        p_txn_id: invoiceId
+      });
+
+      if (rpcError) {
+        console.error("HGP Verify RPC Error:", rpcError);
+      } else if (rpcResult && rpcResult.success) {
+        console.log(`HGP Verify: Order ${orderId} updated to COMPLETED via RPC`);
+        const order = rpcResult.order;
+        const profile = rpcResult.profile;
+        if (profile && profile.full_name) {
+          order.customerName = profile.full_name;
+        }
+
+        console.log("HGP Verify: Sending Telegram notification");
+        await sendTelegramNotification(order);
+      } else if (rpcResult && rpcResult.already_completed) {
+        console.log(`HGP Verify: Order ${orderId} is already COMPLETED, skipping notification.`);
+      }
+    }
+
+    res.json(response.data);
+  } catch (error: any) {
+    console.error("ZiniPay Verify Error:", error.response?.data || error.message);
+    res.status(500).json({ success: false, error: error.response?.data || error.message });
+  }
+});
+
+// ZiniPay Webhook Route
+app.post("/api/payment/webhook", async (req, res) => {
+  try {
+    // ZiniPay sends payment status updates here
+    const data = req.body;
+    console.log("ZiniPay Webhook Received:", JSON.stringify(data, null, 2));
+    
+    // Extract status and orderId from various possible ZiniPay formats
+    const status = data.status || data.payment_status || data.data?.status;
+    const invoiceId = data.invoiceId || data.invoice_id || data.data?.invoiceId;
+    const transactionId = data.transactionId || data.transaction_id || data.data?.transactionId || invoiceId;
+    
+    // metadata might be at root or inside data
+    const metadata = data.metadata || data.data?.metadata;
+    const orderId = metadata?.orderId || data.orderId || data.order_id;
+
+    const isSuccess = ['success', 'COMPLETED', 'completed', 'PAID', 'paid'].includes(status);
+
+    if (isSuccess && orderId) {
+      // Use the secure RPC function to update the order and bypass RLS
+      const { data: rpcResult, error: rpcError } = await supabase.rpc('complete_payment', {
+        p_order_id: orderId,
+        p_txn_id: transactionId
+      });
+
+      if (rpcError) {
+        console.error("HGP Webhook RPC Error:", rpcError);
+      } else if (rpcResult && rpcResult.success) {
+        console.log(`HGP Webhook: Order ${orderId} updated to COMPLETED via RPC`);
+        const order = rpcResult.order;
+        const profile = rpcResult.profile;
+        if (profile && profile.full_name) {
+          order.customerName = profile.full_name;
+        }
+
+        console.log("HGP Webhook: Sending Telegram notification");
+        await sendTelegramNotification(order);
+      } else if (rpcResult && rpcResult.already_completed) {
+        console.log(`HGP Webhook: Order ${orderId} is already COMPLETED, skipping notification.`);
+      }
+    }
+
+    res.json({ success: true });
+  } catch (error: any) {
+    console.error("ZiniPay Webhook Error:", error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Email Notification Route
+app.post("/api/notifications/email", async (req, res) => {
+  try {
+    const { order, userEmail, userName, pdfBase64, fileName, isAdminAlert } = req.body;
+
+    const transporter = nodemailer.createTransport({
+      host: SMTP_HOSTNAME,
+      port: SMTP_PORT,
+      secure: SMTP_PORT === 465,
+      auth: {
+        user: SMTP_USERNAME,
+        pass: SMTP_PASSWORD,
+      },
+    });
+
+    const isCompleted = order.status === 'COMPLETED';
+    const isCancelled = order.status === 'CANCELLED';
+    
+    let subject = isCompleted 
+      ? `Order Delivery Complete - HGP #${order.id}`
+      : isCancelled
+        ? `Order Rejected/Cancelled - HGP #${order.id}`
+        : `Order Confirmation - HGP #${order.id}`;
+
+    if (isAdminAlert) {
+      subject = `🚨 NEW ORDER RECEIVED - HGP #${order.id}`;
+    }
+
+    const htmlContent = `
+      <div style="font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
+        <h2 style="color: #dc2626;">Hasibul Game Point</h2>
+        <p>Hello <strong>${userName}</strong>,</p>
+        ${isAdminAlert 
+          ? `<p style="color: #dc2626; font-weight: bold; font-size: 18px;">New Order Alert!</p>
+             <p>A new order has been placed on the store. Please check the admin dashboard to process it.</p>`
+          : isCompleted 
+            ? `<p style="color: #16a34a; font-weight: bold; font-size: 18px;">Your order has been successfully processed and deployed!</p>
+               <p>The items have been added to your account. Thank you for choosing HGP.</p>`
+            : isCancelled
+              ? `<p style="color: #dc2626; font-weight: bold; font-size: 18px;">Your order has been rejected or cancelled.</p>
+                 <p>If you have already paid, please contact support with your Transaction ID for a refund or manual processing.</p>`
+              : `<p>Thank you for your order! We have received your request and it is being processed.</p>
+                 <p>Deployment usually takes 5-30 minutes.</p>`
+        }
+        <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
+        <h3>Order Summary:</h3>
+        <p><strong>Order ID:</strong> ${order.id}</p>
+        <p><strong>Status:</strong> ${order.status}</p>
+        <p><strong>Total Amount:</strong> ৳${order.totalAmount}</p>
+        ${order.paymentMethod ? `<p><strong>Payment Method:</strong> ${order.paymentMethod}</p>` : ''}
+        ${order.transactionId ? `<p><strong>Transaction ID:</strong> ${order.transactionId}</p>` : ''}
+        <ul style="list-style: none; padding: 0;">
+          ${order.items.map((item: any) => `
+            <li style="padding: 10px; background: #f9f9f9; margin-bottom: 5px; border-radius: 5px;">
+              <strong>${item.gameTitle}</strong> - ${item.packageName}<br/>
+              <span style="font-size: 12px; color: #666;">Target ID: ${item.playerId}</span>
+            </li>
+          `).join('')}
+        </ul>
+        <p>Your receipt is attached to this email.</p>
+        <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
+        <p style="font-size: 12px; color: #666; text-align: center;">This is an automated message from the HGP Crimson Protocol. Please do not reply directly.</p>
+      </div>
+    `;
+
+    await transporter.sendMail({
+      from: SMTP_USERNAME,
+      to: userEmail,
+      subject: subject,
+      html: htmlContent,
+      attachments: pdfBase64 ? [
+        {
+          filename: fileName || 'receipt.pdf',
+          content: Buffer.from(pdfBase64, 'base64'),
+        }
+      ] : []
+    });
+
+    res.json({ success: true });
+  } catch (error: any) {
+    console.error("Email Error:", error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Telegram Notification Route
+app.post("/api/notifications/telegram", async (req, res) => {
+  try {
+    const { order } = req.body;
+    const result = await sendTelegramNotification(order);
+    
+    if (result.success) {
+      res.json({ success: true });
+    } else {
+      res.status(500).json({ success: false, error: result.error });
+    }
+  } catch (error: any) {
+    console.error("Telegram Route Error:", error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Handle ZiniPay Redirects (GET/POST)
+app.all(["/payment/success", "/shop/payment/success"], (req, res) => {
+  const params = { ...req.query, ...req.body };
+  const queryString = new URLSearchParams(params as any).toString();
+  
+  // Determine the base URL
+  const host = req.get('host') || 'localhost:3000';
+  // Better protocol detection for Cloud Run and other proxies
+  const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+  const baseUrl = process.env.APP_URL || `${protocol}://${host}`;
+  
+  console.log(`Redirecting to: ${baseUrl}/?payment=success&${queryString}`);
+  
+  // Always redirect to root /
+  res.redirect(`${baseUrl}/?payment=success&${queryString}`);
+});
+
+app.all(["/payment/cancel", "/shop/payment/cancel"], (req, res) => {
+  const params = { ...req.query, ...req.body };
+  const queryString = new URLSearchParams(params as any).toString();
+  
+  const host = req.get('host') || 'localhost:3000';
+  const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+  const baseUrl = process.env.APP_URL || `${protocol}://${host}`;
+  
+  // Always redirect to root /
+  res.redirect(`${baseUrl}/?payment=cancel&${queryString}`);
+});
+
 async function startServer() {
   const PORT = 3000;
 
-  // ZiniPay Create Payment Route
-  app.post("/api/payment/create", async (req, res) => {
-    try {
-      console.log("HGP DEBUG: /api/payment/create called with body:", JSON.stringify(req.body));
-      const { amount, redirect_url, cancel_url, webhook_url, cus_email, cus_name, metadata } = req.body;
-
-      if (!amount) {
-        console.error("HGP ERROR: Missing amount in payment request");
-        return res.status(400).json({ success: false, error: "Missing amount" });
-      }
-
-      const payload = {
-        amount: amount.toString(),
-        redirect_url,
-        cancel_url,
-        webhook_url,
-        cus_email: cus_email || "guest@example.com",
-        cus_name: cus_name || "Guest",
-        metadata: { ...metadata, phone: "01700000000" }
-      };
-      
-      console.log("HGP DEBUG: Sending ZiniPay Payload:", JSON.stringify(payload));
-
-      if (ZINIPAY_API_KEY === '8cd7a947713ac7f4ffc28131022d9102de9aacb54d3c0121') {
-        console.warn("HGP WARNING: Using default/test ZiniPay API Key. This may fail on the live endpoint.");
-      }
-
-      const response = await axios.post('https://api.zinipay.com/v1/payment/create', payload, {
-        headers: {
-          'zini-api-key': ZINIPAY_API_KEY,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      console.log("HGP DEBUG: ZiniPay Create Success Response:", JSON.stringify(response.data));
-      res.json(response.data);
-    } catch (error: any) {
-      console.error("HGP ERROR: ZiniPay Create Error:", error.response?.data || error.message);
-      res.status(500).json({ 
-        success: false, 
-        error: error.response?.data || error.message,
-        details: "Please check your ZiniPay API Key and ensure your domain is whitelisted."
-      });
-    }
-  });
-
-  // ZiniPay Verify Payment Route
-  app.post("/api/payment/verify", async (req, res) => {
-    try {
-      const { invoiceId } = req.body;
-
-      const response = await axios.post('https://api.zinipay.com/v1/payment/verify', {
-        invoiceId,
-        apiKey: ZINIPAY_API_KEY
-      }, {
-        headers: {
-          'zini-api-key': ZINIPAY_API_KEY,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      const data = response.data;
-      const status = data.status || data.payment_status || data.data?.status;
-      const isSuccess = ['success', 'COMPLETED', 'completed', 'PAID', 'paid'].includes(status);
-      
-      // Extract orderId from metadata if available
-      const metadata = data.metadata || data.data?.metadata;
-      const orderId = metadata?.orderId || data.orderId || data.order_id;
-
-      if (isSuccess && orderId) {
-        // Use the secure RPC function to update the order and bypass RLS
-        const { data: rpcResult, error: rpcError } = await supabase.rpc('complete_payment', {
-          p_order_id: orderId,
-          p_txn_id: invoiceId
-        });
-
-        if (rpcError) {
-          console.error("HGP Verify RPC Error:", rpcError);
-        } else if (rpcResult && rpcResult.success) {
-          console.log(`HGP Verify: Order ${orderId} updated to COMPLETED via RPC`);
-          const order = rpcResult.order;
-          const profile = rpcResult.profile;
-          if (profile && profile.full_name) {
-            order.customerName = profile.full_name;
-          }
-
-          console.log("HGP Verify: Sending Telegram notification");
-          await sendTelegramNotification(order);
-        } else if (rpcResult && rpcResult.already_completed) {
-          console.log(`HGP Verify: Order ${orderId} is already COMPLETED, skipping notification.`);
-        }
-      }
-
-      res.json(response.data);
-    } catch (error: any) {
-      console.error("ZiniPay Verify Error:", error.response?.data || error.message);
-      res.status(500).json({ success: false, error: error.response?.data || error.message });
-    }
-  });
-
-  // ZiniPay Webhook Route
-  app.post("/api/payment/webhook", async (req, res) => {
-    try {
-      // ZiniPay sends payment status updates here
-      const data = req.body;
-      console.log("ZiniPay Webhook Received:", JSON.stringify(data, null, 2));
-      
-      // Extract status and orderId from various possible ZiniPay formats
-      const status = data.status || data.payment_status || data.data?.status;
-      const invoiceId = data.invoiceId || data.invoice_id || data.data?.invoiceId;
-      const transactionId = data.transactionId || data.transaction_id || data.data?.transactionId || invoiceId;
-      
-      // metadata might be at root or inside data
-      const metadata = data.metadata || data.data?.metadata;
-      const orderId = metadata?.orderId || data.orderId || data.order_id;
-
-      const isSuccess = ['success', 'COMPLETED', 'completed', 'PAID', 'paid'].includes(status);
-
-      if (isSuccess && orderId) {
-        // Use the secure RPC function to update the order and bypass RLS
-        const { data: rpcResult, error: rpcError } = await supabase.rpc('complete_payment', {
-          p_order_id: orderId,
-          p_txn_id: transactionId
-        });
-
-        if (rpcError) {
-          console.error("HGP Webhook RPC Error:", rpcError);
-        } else if (rpcResult && rpcResult.success) {
-          console.log(`HGP Webhook: Order ${orderId} updated to COMPLETED via RPC`);
-          const order = rpcResult.order;
-          const profile = rpcResult.profile;
-          if (profile && profile.full_name) {
-            order.customerName = profile.full_name;
-          }
-
-          console.log("HGP Webhook: Sending Telegram notification");
-          await sendTelegramNotification(order);
-        } else if (rpcResult && rpcResult.already_completed) {
-          console.log(`HGP Webhook: Order ${orderId} is already COMPLETED, skipping notification.`);
-        }
-      }
-
-      res.json({ success: true });
-    } catch (error: any) {
-      console.error("ZiniPay Webhook Error:", error.message);
-      res.status(500).json({ success: false, error: error.message });
-    }
-  });
-
-  // Email Notification Route
-  app.post("/api/notifications/email", async (req, res) => {
-    try {
-      const { order, userEmail, userName, pdfBase64, fileName, isAdminAlert } = req.body;
-
-      const transporter = nodemailer.createTransport({
-        host: SMTP_HOSTNAME,
-        port: SMTP_PORT,
-        secure: SMTP_PORT === 465,
-        auth: {
-          user: SMTP_USERNAME,
-          pass: SMTP_PASSWORD,
-        },
-      });
-
-      const isCompleted = order.status === 'COMPLETED';
-      const isCancelled = order.status === 'CANCELLED';
-      
-      let subject = isCompleted 
-        ? `Order Delivery Complete - HGP #${order.id}`
-        : isCancelled
-          ? `Order Rejected/Cancelled - HGP #${order.id}`
-          : `Order Confirmation - HGP #${order.id}`;
-
-      if (isAdminAlert) {
-        subject = `🚨 NEW ORDER RECEIVED - HGP #${order.id}`;
-      }
-
-      const htmlContent = `
-        <div style="font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
-          <h2 style="color: #dc2626;">Hasibul Game Point</h2>
-          <p>Hello <strong>${userName}</strong>,</p>
-          ${isAdminAlert 
-            ? `<p style="color: #dc2626; font-weight: bold; font-size: 18px;">New Order Alert!</p>
-               <p>A new order has been placed on the store. Please check the admin dashboard to process it.</p>`
-            : isCompleted 
-              ? `<p style="color: #16a34a; font-weight: bold; font-size: 18px;">Your order has been successfully processed and deployed!</p>
-                 <p>The items have been added to your account. Thank you for choosing HGP.</p>`
-              : isCancelled
-                ? `<p style="color: #dc2626; font-weight: bold; font-size: 18px;">Your order has been rejected or cancelled.</p>
-                   <p>If you have already paid, please contact support with your Transaction ID for a refund or manual processing.</p>`
-                : `<p>Thank you for your order! We have received your request and it is being processed.</p>
-                   <p>Deployment usually takes 5-30 minutes.</p>`
-          }
-          <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
-          <h3>Order Summary:</h3>
-          <p><strong>Order ID:</strong> ${order.id}</p>
-          <p><strong>Status:</strong> ${order.status}</p>
-          <p><strong>Total Amount:</strong> ৳${order.totalAmount}</p>
-          ${order.paymentMethod ? `<p><strong>Payment Method:</strong> ${order.paymentMethod}</p>` : ''}
-          ${order.transactionId ? `<p><strong>Transaction ID:</strong> ${order.transactionId}</p>` : ''}
-          <ul style="list-style: none; padding: 0;">
-            ${order.items.map((item: any) => `
-              <li style="padding: 10px; background: #f9f9f9; margin-bottom: 5px; border-radius: 5px;">
-                <strong>${item.gameTitle}</strong> - ${item.packageName}<br/>
-                <span style="font-size: 12px; color: #666;">Target ID: ${item.playerId}</span>
-              </li>
-            `).join('')}
-          </ul>
-          <p>Your receipt is attached to this email.</p>
-          <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
-          <p style="font-size: 12px; color: #666; text-align: center;">This is an automated message from the HGP Crimson Protocol. Please do not reply directly.</p>
-        </div>
-      `;
-
-      await transporter.sendMail({
-        from: SMTP_USERNAME,
-        to: userEmail,
-        subject: subject,
-        html: htmlContent,
-        attachments: pdfBase64 ? [
-          {
-            filename: fileName || 'receipt.pdf',
-            content: Buffer.from(pdfBase64, 'base64'),
-          }
-        ] : []
-      });
-
-      res.json({ success: true });
-    } catch (error: any) {
-      console.error("Email Error:", error.message);
-      res.status(500).json({ success: false, error: error.message });
-    }
-  });
-
-  // Telegram Notification Route
-  app.post("/api/notifications/telegram", async (req, res) => {
-    try {
-      const { order } = req.body;
-      const result = await sendTelegramNotification(order);
-      
-      if (result.success) {
-        res.json({ success: true });
-      } else {
-        res.status(500).json({ success: false, error: result.error });
-      }
-    } catch (error: any) {
-      console.error("Telegram Route Error:", error.message);
-      res.status(500).json({ success: false, error: error.message });
-    }
-  });
-
-  // Handle ZiniPay Redirects (GET/POST)
-  app.all(["/payment/success", "/shop/payment/success"], (req, res) => {
-    const params = { ...req.query, ...req.body };
-    const queryString = new URLSearchParams(params as any).toString();
-    
-    // Determine the base URL
-    const host = req.get('host') || 'localhost:3000';
-    // Better protocol detection for Cloud Run and other proxies
-    const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
-    const baseUrl = process.env.APP_URL || `${protocol}://${host}`;
-    
-    console.log(`Redirecting to: ${baseUrl}/?payment=success&${queryString}`);
-    
-    // Always redirect to root /
-    res.redirect(`${baseUrl}/?payment=success&${queryString}`);
-  });
-
-  app.all(["/payment/cancel", "/shop/payment/cancel"], (req, res) => {
-    const params = { ...req.query, ...req.body };
-    const queryString = new URLSearchParams(params as any).toString();
-    
-    const host = req.get('host') || 'localhost:3000';
-    const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
-    const baseUrl = process.env.APP_URL || `${protocol}://${host}`;
-    
-    // Always redirect to root /
-    res.redirect(`${baseUrl}/?payment=cancel&${queryString}`);
-  });
-
   // Vite middleware for development
-  if (process.env.NODE_ENV !== "production") {
+  if (process.env.NODE_ENV !== "production" && process.env.VERCEL !== "1") {
+    const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
@@ -478,7 +478,8 @@ async function startServer() {
         next(e);
       }
     });
-  } else {
+  } else if (process.env.VERCEL !== "1") {
+    // Only serve static files if NOT on Vercel (Vercel handles this via vercel.json)
     const distPath = path.join(__dirname, "dist");
     app.use(express.static(distPath));
     app.get("*all", (req, res) => {
