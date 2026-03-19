@@ -111,6 +111,37 @@ const sendTelegramNotification = async (order: any) => {
   }
 };
 
+// Specific ZiniPay Admin Notification Helper
+const sendZiniPayAdminNotification = async (orderId: string, amount: string | number, transactionId: string, status: string = 'success') => {
+  try {
+    const adminChatIds = [TELEGRAM_CHAT_ID]; // Support multiple admin chat IDs if needed
+    const isSuccess = status === 'success';
+    const emoji = isSuccess ? '✅' : '❌';
+    const title = isSuccess ? 'ZiniPay Verification Complete!' : 'ZiniPay Verification Failed!';
+
+    const message = `${emoji} <b>${title}</b>\n\n` +
+                    `📦 <b>Order ID:</b> #${orderId}\n` +
+                    `💰 <b>Amount:</b> ৳${amount}\n` +
+                    `🧾 <b>Transaction ID:</b> <code>${transactionId}</code>`;
+
+    const telegramUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+    
+    const requests = adminChatIds.map(chatId => 
+      axios.post(telegramUrl, {
+        chat_id: chatId,
+        text: message,
+        parse_mode: 'HTML'
+      })
+    );
+
+    await Promise.all(requests);
+    return { success: true };
+  } catch (error: any) {
+    console.error("ZiniPay Admin Telegram Notification Error:", error.message);
+    return { success: false, error: error.message };
+  }
+};
+
 // Supabase Client (Server-side)
 const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://xcxdkplxrxsuuwebpnyx.supabase.co';
 // Use Service Role Key if available to bypass RLS for webhooks, otherwise fallback to Anon Key
@@ -244,11 +275,17 @@ app.post("/api/payment/verify", async (req, res) => {
           order.customerName = profile.full_name;
         }
 
-        console.log("HGP Verify: Sending Telegram notification");
+        console.log("HGP Verify: Sending Telegram notification to admin");
+        // Send the specific ZiniPay admin notification
+        await sendZiniPayAdminNotification(orderId, data.amount || order.totalAmount, invoiceId, 'success');
+        // Also send the detailed notification for internal tracking
         await sendTelegramNotification(order);
       } else if (rpcResult && rpcResult.already_processed) {
         console.log(`HGP Verify: Order ${orderId} is already PROCESSING/COMPLETED, skipping notification.`);
       }
+    } else if (!isSuccess && orderId) {
+      // Optional: Send failed notification
+      await sendZiniPayAdminNotification(orderId, data.amount || '0', invoiceId || 'N/A', 'failed');
     }
 
     res.json(response.data);
@@ -261,6 +298,13 @@ app.post("/api/payment/verify", async (req, res) => {
 // ZiniPay Webhook Route
 app.post("/api/payment/webhook", async (req, res) => {
   try {
+    // Basic security: check for a secret token if provided in environment
+    const webhookToken = process.env.ZINIPAY_WEBHOOK_TOKEN;
+    if (webhookToken && req.query.token !== webhookToken) {
+      console.error("ZiniPay Webhook: Unauthorized access attempt");
+      return res.status(401).json({ success: false, error: "Unauthorized" });
+    }
+
     // ZiniPay sends payment status updates here
     const data = req.body;
     console.log("ZiniPay Webhook Received:", JSON.stringify(data, null, 2));
@@ -269,6 +313,7 @@ app.post("/api/payment/webhook", async (req, res) => {
     const status = data.status || data.payment_status || data.data?.status;
     const invoiceId = data.invoiceId || data.invoice_id || data.data?.invoiceId;
     const transactionId = data.transactionId || data.transaction_id || data.data?.transactionId || invoiceId;
+    const amount = data.amount || data.data?.amount || '0';
     
     // metadata might be at root or inside data
     const metadata = data.metadata || data.data?.metadata;
@@ -293,11 +338,17 @@ app.post("/api/payment/webhook", async (req, res) => {
           order.customerName = profile.full_name;
         }
 
-        console.log("HGP Webhook: Sending Telegram notification");
+        console.log("HGP Webhook: Sending Telegram notification to admin");
+        // Send the specific ZiniPay admin notification
+        await sendZiniPayAdminNotification(orderId, amount, transactionId, 'success');
+        // Also send the detailed notification for internal tracking
         await sendTelegramNotification(order);
       } else if (rpcResult && rpcResult.already_processed) {
         console.log(`HGP Webhook: Order ${orderId} is already PROCESSING/COMPLETED, skipping notification.`);
       }
+    } else if (!isSuccess && orderId) {
+      // Optional: Send failed notification
+      await sendZiniPayAdminNotification(orderId, amount, transactionId || 'N/A', 'failed');
     }
 
     res.json({ success: true });

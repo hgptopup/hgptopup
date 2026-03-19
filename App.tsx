@@ -135,9 +135,18 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     // Suppress specific Supabase unhandled rejections
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-      if (event.reason && event.reason.message && event.reason.message.includes('Refresh Token')) {
+      const reason = event.reason;
+      if (reason && reason.message && (reason.message.includes('Refresh Token') || reason.message.includes('refresh_token'))) {
         event.preventDefault();
+        // Silently sign out and clear local storage if refresh token is invalid
         supabase.auth.signOut().catch(() => {});
+        // Fallback: manually clear potential stuck tokens
+        Object.keys(localStorage).forEach(key => {
+          if (key.includes('supabase.auth.token')) {
+            localStorage.removeItem(key);
+          }
+        });
+        setSession(null);
       }
     };
     window.addEventListener('unhandledrejection', handleUnhandledRejection);
@@ -146,7 +155,12 @@ const AppContent: React.FC = () => {
       try {
         // Fetch session and public data in parallel for maximum speed
         const [sessionResponse] = await Promise.all([
-          supabase.auth.getSession(),
+          supabase.auth.getSession().catch(err => {
+            if (err.message && (err.message.includes('Refresh Token') || err.message.includes('refresh_token'))) {
+              return { data: { session: null }, error: null };
+            }
+            throw err;
+          }),
           useStore.getState().fetchGames(),
           useStore.getState().fetchFloatingIcons(),
           useStore.getState().fetchHeroBanners(),
@@ -155,16 +169,16 @@ const AppContent: React.FC = () => {
 
         const { data: { session }, error } = sessionResponse;
         if (error) {
-          if (!error.message.includes('Refresh Token')) {
+          if (!error.message.includes('Refresh Token') && !error.message.includes('refresh_token')) {
             console.error("Session error:", error.message);
           }
           supabase.auth.signOut().catch(() => {});
-          setSession(null); // Non-blocking
+          setSession(null);
         } else {
-          setSession(session?.user ?? null); // Non-blocking
+          setSession(session?.user ?? null);
         }
       } catch (err: any) {
-        if (err && err.message && !err.message.includes('Refresh Token')) {
+        if (err && err.message && !err.message.includes('Refresh Token') && !err.message.includes('refresh_token')) {
           console.error("Failed to get session:", err);
         }
         supabase.auth.signOut().catch(() => {});
