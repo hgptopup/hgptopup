@@ -114,15 +114,13 @@ const sendTelegramNotification = async (order: any) => {
 // Specific ZiniPay Admin Notification Helper
 const sendZiniPayAdminNotification = async (orderId: string, amount: string | number, transactionId: string, status: string = 'success') => {
   try {
-    const adminChatIds = [TELEGRAM_CHAT_ID]; // Support multiple admin chat IDs if needed
-    const isSuccess = status === 'success';
-    const emoji = isSuccess ? '✅' : '❌';
-    const title = isSuccess ? 'ZiniPay Verification Complete!' : 'ZiniPay Verification Failed!';
+    const adminChatIds = [TELEGRAM_CHAT_ID];
+    if (status !== 'success') return { success: true };
 
-    const message = `${emoji} <b>${title}</b>\n\n` +
-                    `📦 <b>Order ID:</b> #${orderId}\n` +
-                    `💰 <b>Amount:</b> ৳${amount}\n` +
-                    `🧾 <b>Transaction ID:</b> <code>${transactionId}</code>`;
+    const message = `<b>✅ ZiniPay Verification Complete!</b>\n\n` +
+                    `<b>Order ID:</b> ${orderId}\n` +
+                    `<b>Amount:</b> ৳${amount}\n` +
+                    `<b>Transaction ID:</b> ${transactionId}`;
 
     const telegramUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
     
@@ -276,10 +274,8 @@ app.post("/api/payment/verify", async (req, res) => {
         }
 
         console.log("HGP Verify: Sending Telegram notification to admin");
-        // Send the specific ZiniPay admin notification
+        // Send the specific ZiniPay admin notification (screenshot format)
         await sendZiniPayAdminNotification(orderId, data.amount || order.totalAmount, invoiceId, 'success');
-        // Also send the detailed notification for internal tracking
-        await sendTelegramNotification(order);
       } else if (rpcResult && rpcResult.already_processed) {
         console.log(`HGP Verify: Order ${orderId} is already PROCESSING/COMPLETED, skipping notification.`);
       }
@@ -339,10 +335,8 @@ app.post("/api/payment/webhook", async (req, res) => {
         }
 
         console.log("HGP Webhook: Sending Telegram notification to admin");
-        // Send the specific ZiniPay admin notification
+        // Send the specific ZiniPay admin notification (screenshot format)
         await sendZiniPayAdminNotification(orderId, amount, transactionId, 'success');
-        // Also send the detailed notification for internal tracking
-        await sendTelegramNotification(order);
       } else if (rpcResult && rpcResult.already_processed) {
         console.log(`HGP Webhook: Order ${orderId} is already PROCESSING/COMPLETED, skipping notification.`);
       }
