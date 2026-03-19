@@ -152,7 +152,7 @@ BEGIN
 
   -- Update the order
   UPDATE public.orders
-  SET status = 'COMPLETED', transaction_id = p_txn_id
+  SET transaction_id = p_txn_id
   WHERE id = p_order_id
   RETURNING * INTO v_order;
 

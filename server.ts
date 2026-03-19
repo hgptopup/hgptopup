@@ -228,26 +228,41 @@ app.post("/api/payment/verify", async (req, res) => {
     const orderId = metadata?.orderId || data.orderId || data.order_id;
 
     if (isSuccess && orderId) {
-      // Use the secure RPC function to update the order and bypass RLS
-      const { data: rpcResult, error: rpcError } = await supabase.rpc('complete_payment', {
-        p_order_id: orderId,
-        p_txn_id: invoiceId
-      });
+      // Try to update the order transaction ID using the Supabase client
+      const { error: updateError } = await supabase
+        .from('orders')
+        .update({ transaction_id: invoiceId })
+        .eq('id', orderId);
 
-      if (rpcError) {
-        console.error("HGP Verify RPC Error:", rpcError);
-      } else if (rpcResult && rpcResult.success) {
-        console.log(`HGP Verify: Order ${orderId} updated to COMPLETED via RPC`);
-        const order = rpcResult.order;
-        const profile = rpcResult.profile;
-        if (profile && profile.full_name) {
-          order.customerName = profile.full_name;
+      if (updateError) {
+        console.error("HGP Verify Update Error:", updateError);
+      }
+      
+      // Fetch the order to send the notification
+      const { data: order } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('id', orderId)
+        .single();
+
+      if (order) {
+        if (order.status === 'COMPLETED') {
+          console.log(`HGP Verify: Order ${orderId} is already COMPLETED, skipping notification.`);
+        } else {
+          order.transactionId = invoiceId; // Ensure transactionId is set for the notification
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', order.user_id)
+            .single();
+            
+          if (profile && profile.full_name) {
+            order.customerName = profile.full_name;
+          }
+
+          console.log("HGP Verify: Sending Telegram notification");
+          await sendTelegramNotification(order);
         }
-
-        console.log("HGP Verify: Sending Telegram notification");
-        await sendTelegramNotification(order);
-      } else if (rpcResult && rpcResult.already_completed) {
-        console.log(`HGP Verify: Order ${orderId} is already COMPLETED, skipping notification.`);
       }
     }
 
@@ -277,26 +292,41 @@ app.post("/api/payment/webhook", async (req, res) => {
     const isSuccess = ['success', 'COMPLETED', 'completed', 'PAID', 'paid'].includes(status);
 
     if (isSuccess && orderId) {
-      // Use the secure RPC function to update the order and bypass RLS
-      const { data: rpcResult, error: rpcError } = await supabase.rpc('complete_payment', {
-        p_order_id: orderId,
-        p_txn_id: transactionId
-      });
+      // Try to update the order transaction ID using the Supabase client
+      const { error: updateError } = await supabase
+        .from('orders')
+        .update({ transaction_id: transactionId })
+        .eq('id', orderId);
 
-      if (rpcError) {
-        console.error("HGP Webhook RPC Error:", rpcError);
-      } else if (rpcResult && rpcResult.success) {
-        console.log(`HGP Webhook: Order ${orderId} updated to COMPLETED via RPC`);
-        const order = rpcResult.order;
-        const profile = rpcResult.profile;
-        if (profile && profile.full_name) {
-          order.customerName = profile.full_name;
+      if (updateError) {
+        console.error("HGP Webhook Update Error:", updateError);
+      }
+      
+      // Fetch the order to send the notification
+      const { data: order } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('id', orderId)
+        .single();
+
+      if (order) {
+        if (order.status === 'COMPLETED') {
+          console.log(`HGP Webhook: Order ${orderId} is already COMPLETED, skipping notification.`);
+        } else {
+          order.transactionId = transactionId; // Ensure transactionId is set for the notification
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', order.user_id)
+            .single();
+            
+          if (profile && profile.full_name) {
+            order.customerName = profile.full_name;
+          }
+
+          console.log("HGP Webhook: Sending Telegram notification");
+          await sendTelegramNotification(order);
         }
-
-        console.log("HGP Webhook: Sending Telegram notification");
-        await sendTelegramNotification(order);
-      } else if (rpcResult && rpcResult.already_completed) {
-        console.log(`HGP Webhook: Order ${orderId} is already COMPLETED, skipping notification.`);
       }
     }
 
