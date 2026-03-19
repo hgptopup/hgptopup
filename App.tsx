@@ -241,7 +241,7 @@ const AppContent: React.FC = () => {
         if (orderIdParam) {
           // If we have orderId but no invoiceId, check order status directly
           supabase.from('orders').select('status, transaction_id').eq('id', orderIdParam).maybeSingle().then(({ data }) => {
-            if (data && (data.status === 'COMPLETED' || data.transaction_id)) {
+            if (data && (data.status === 'COMPLETED' || (data.transaction_id && data.transaction_id !== 'PENDING_ZINIPAY'))) {
               fetchOrders();
               setIsVerifyingPayment(false);
               setShowPaymentSuccess(true);

@@ -27,7 +27,7 @@ const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || '5067614518';
 const ZINIPAY_API_KEY = process.env.ZINIPAY_API_KEY || '8cd7a947713ac7f4ffc28131022d9102de9aacb54d3c0121';
 
 // Telegram Notification Helper
-const sendTelegramNotification = async (order: any) => {
+const sendTelegramNotification = async (order: any, isPaymentVerified: boolean = false) => {
   try {
     const escapeHTML = (str: string) => {
       if (!str) return '';
@@ -48,12 +48,14 @@ const sendTelegramNotification = async (order: any) => {
     if (isCancelled) {
       message = `<b>❌ ORDER CANCELLED</b>\n`;
     } else if (isCompleted) {
-      message = `<b>✅ PAYMENT COMPLETED</b>\n`;
+      message = `<b>✅ ORDER COMPLETED</b>\n`;
+    } else if (isPaymentVerified) {
+      message = `<b>✅ PAYMENT VERIFIED</b>\n`;
     } else {
       message = `<b>🚨 NEW ORDER RECEIVED</b>\n`;
     }
     
-    message += `<code>REF: ${escapeHTML(order.id)}</code>\n`;
+    message += `REF: ${escapeHTML(order.id)}\n`;
     message += `━━━━━━━━━━━━━━━━━━━━\n\n`;
 
     const totalAmount = order.totalAmount || order.total_amount || 0;
@@ -61,10 +63,10 @@ const sendTelegramNotification = async (order: any) => {
     const transactionId = order.transactionId || order.transaction_id || 'N/A';
     const customerName = order.customerName || order.customer_name || order.userId || order.user_id || 'Guest';
 
-    message += `<b>👤 CUSTOMER:</b> <code>${escapeHTML(customerName)}</code>\n`;
+    message += `<b>👤 CUSTOMER:</b> ${escapeHTML(customerName)}\n`;
     message += `<b>💵 TOTAL:</b> ৳${totalAmount}\n`;
     message += `<b>💳 METHOD:</b> ${escapeHTML(paymentMethod)}\n`;
-    message += `<b>🔑 TRX ID:</b> <code>${escapeHTML(transactionId)}</code>\n\n`;
+    message += `<b>🔑 TRX ID:</b> ${escapeHTML(transactionId)}\n\n`;
     
     const items = order.items || [];
     if (Array.isArray(items) && items.length > 0) {
@@ -76,19 +78,21 @@ const sendTelegramNotification = async (order: any) => {
         const loginMethod = item.loginMethod || item.login_method || 'N/A';
         
         message += `• ${escapeHTML(gameTitle)} - ${escapeHTML(packageName)}\n`;
-        message += `  ID: <code>${escapeHTML(playerId)}</code> | ${escapeHTML(loginMethod)}\n`;
-        if (item.password) message += `  PW: <code>${escapeHTML(item.password)}</code>\n`;
+        message += `  ID: ${escapeHTML(playerId)} | ${escapeHTML(loginMethod)}\n`;
+        if (item.password) message += `  PW: ${escapeHTML(item.password)}\n`;
         message += `\n`;
       });
     } else if (typeof items === 'string') {
       // Handle case where items might be a string (though it shouldn't be)
-      message += `<b>📦 PRODUCTS:</b>\n<code>${escapeHTML(items)}</code>\n\n`;
+      message += `<b>📦 PRODUCTS:</b>\n${escapeHTML(items)}\n\n`;
     }
 
     message += `━━━━━━━━━━━━━━━━━━━━\n`;
-    message += `<b>🕒 TIME:</b> ${new Date().toLocaleString('en-BD')}\n\n`;
+    message += `<b>🕒 TIME:</b> ${new Date().toLocaleString('en-US')}\n\n`;
     
     if (isCompleted) {
+      message += `<i>Order has been successfully processed.</i>`;
+    } else if (isPaymentVerified) {
       message += `<i>Payment verified. Please process the top-up.</i>`;
     } else if (isCancelled) {
       message += `<i>Order was cancelled by user or system.</i>`;
@@ -108,6 +112,36 @@ const sendTelegramNotification = async (order: any) => {
   } catch (error: any) {
     console.error("Telegram Notification Helper Error:", error.message);
     return { success: false, error: error.message };
+  }
+};
+
+const sendZiniPayVerificationNotification = async (orderId: string, amount: number, transactionId: string) => {
+  try {
+    const escapeHTML = (str: string) => {
+      if (!str) return '';
+      return str
+        .toString()
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    };
+
+    let message = `✅ <b>ZiniPay Verification Complete!</b>\n\n`;
+    message += `Order ID: ${escapeHTML(orderId)}\n`;
+    message += `Amount: ৳${amount}\n`;
+    message += `Transaction ID:\n${escapeHTML(transactionId)}`;
+
+    const telegramUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+    
+    await axios.post(telegramUrl, {
+      chat_id: TELEGRAM_CHAT_ID,
+      text: message,
+      parse_mode: 'HTML'
+    });
+  } catch (error: any) {
+    console.error("ZiniPay Telegram Notification Error:", error.message);
   }
 };
 
@@ -223,6 +257,8 @@ app.post("/api/payment/verify", async (req, res) => {
     const status = data.status || data.payment_status || data.data?.status;
     const isSuccess = ['success', 'COMPLETED', 'completed', 'PAID', 'paid'].includes(status);
     
+    const actualTransactionId = data.transactionId || data.transaction_id || data.data?.transactionId || invoiceId;
+    
     // Extract orderId from metadata if available
     const metadata = data.metadata || data.data?.metadata;
     const orderId = metadata?.orderId || data.orderId || data.order_id;
@@ -231,7 +267,7 @@ app.post("/api/payment/verify", async (req, res) => {
       // Try to update the order transaction ID using the Supabase client
       const { error: updateError } = await supabase
         .from('orders')
-        .update({ transaction_id: invoiceId })
+        .update({ transaction_id: actualTransactionId })
         .eq('id', orderId);
 
       if (updateError) {
@@ -249,7 +285,7 @@ app.post("/api/payment/verify", async (req, res) => {
         if (order.status === 'COMPLETED') {
           console.log(`HGP Verify: Order ${orderId} is already COMPLETED, skipping notification.`);
         } else {
-          order.transactionId = invoiceId; // Ensure transactionId is set for the notification
+          order.transactionId = actualTransactionId; // Ensure transactionId is set for the notification
           const { data: profile } = await supabase
             .from('profiles')
             .select('full_name')
@@ -261,7 +297,8 @@ app.post("/api/payment/verify", async (req, res) => {
           }
 
           console.log("HGP Verify: Sending Telegram notification");
-          await sendTelegramNotification(order);
+          await sendTelegramNotification(order, true);
+          await sendZiniPayVerificationNotification(orderId, order.totalAmount || order.total_amount || 0, actualTransactionId);
         }
       }
     }
@@ -325,7 +362,8 @@ app.post("/api/payment/webhook", async (req, res) => {
           }
 
           console.log("HGP Webhook: Sending Telegram notification");
-          await sendTelegramNotification(order);
+          await sendTelegramNotification(order, true);
+          await sendZiniPayVerificationNotification(orderId, order.totalAmount || order.total_amount || 0, transactionId);
         }
       }
     }
