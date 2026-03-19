@@ -111,35 +111,6 @@ const sendTelegramNotification = async (order: any) => {
   }
 };
 
-// Specific ZiniPay Admin Notification Helper
-const sendZiniPayAdminNotification = async (orderId: string, amount: string | number, transactionId: string, status: string = 'success') => {
-  try {
-    const adminChatIds = [TELEGRAM_CHAT_ID];
-    if (status !== 'success') return { success: true };
-
-    const message = `<b>✅ ZiniPay Verification Complete!</b>\n\n` +
-                    `<b>Order ID:</b> ${orderId}\n` +
-                    `<b>Amount:</b> ৳${amount}\n` +
-                    `<b>Transaction ID:</b> ${transactionId}`;
-
-    const telegramUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
-    
-    const requests = adminChatIds.map(chatId => 
-      axios.post(telegramUrl, {
-        chat_id: chatId,
-        text: message,
-        parse_mode: 'HTML'
-      })
-    );
-
-    await Promise.all(requests);
-    return { success: true };
-  } catch (error: any) {
-    console.error("ZiniPay Admin Telegram Notification Error:", error.message);
-    return { success: false, error: error.message };
-  }
-};
-
 // Supabase Client (Server-side)
 const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://xcxdkplxrxsuuwebpnyx.supabase.co';
 // Use Service Role Key if available to bypass RLS for webhooks, otherwise fallback to Anon Key
@@ -258,7 +229,7 @@ app.post("/api/payment/verify", async (req, res) => {
 
     if (isSuccess && orderId) {
       // Use the secure RPC function to update the order and bypass RLS
-      const { data: rpcResult, error: rpcError } = await supabase.rpc('process_payment', {
+      const { data: rpcResult, error: rpcError } = await supabase.rpc('complete_payment', {
         p_order_id: orderId,
         p_txn_id: invoiceId
       });
@@ -266,22 +237,18 @@ app.post("/api/payment/verify", async (req, res) => {
       if (rpcError) {
         console.error("HGP Verify RPC Error:", rpcError);
       } else if (rpcResult && rpcResult.success) {
-        console.log(`HGP Verify: Order ${orderId} updated to PROCESSING via RPC`);
+        console.log(`HGP Verify: Order ${orderId} updated to COMPLETED via RPC`);
         const order = rpcResult.order;
         const profile = rpcResult.profile;
         if (profile && profile.full_name) {
           order.customerName = profile.full_name;
         }
 
-        console.log("HGP Verify: Sending Telegram notification to admin");
-        // Send the specific ZiniPay admin notification (screenshot format)
-        await sendZiniPayAdminNotification(orderId, data.amount || order.totalAmount, invoiceId, 'success');
-      } else if (rpcResult && rpcResult.already_processed) {
-        console.log(`HGP Verify: Order ${orderId} is already PROCESSING/COMPLETED, skipping notification.`);
+        console.log("HGP Verify: Sending Telegram notification");
+        await sendTelegramNotification(order);
+      } else if (rpcResult && rpcResult.already_completed) {
+        console.log(`HGP Verify: Order ${orderId} is already COMPLETED, skipping notification.`);
       }
-    } else if (!isSuccess && orderId) {
-      // Optional: Send failed notification
-      await sendZiniPayAdminNotification(orderId, data.amount || '0', invoiceId || 'N/A', 'failed');
     }
 
     res.json(response.data);
@@ -292,19 +259,8 @@ app.post("/api/payment/verify", async (req, res) => {
 });
 
 // ZiniPay Webhook Route
-app.all("/api/payment/webhook", async (req, res) => {
-  if (req.method === 'GET') {
-    return res.send("ZiniPay Webhook Endpoint is Active. Please use POST for actual notifications.");
-  }
-  
+app.post("/api/payment/webhook", async (req, res) => {
   try {
-    // Basic security: check for a secret token if provided in environment
-    const webhookToken = process.env.ZINIPAY_WEBHOOK_TOKEN;
-    if (webhookToken && req.query.token !== webhookToken) {
-      console.error("ZiniPay Webhook: Unauthorized access attempt");
-      return res.status(401).json({ success: false, error: "Unauthorized" });
-    }
-
     // ZiniPay sends payment status updates here
     const data = req.body;
     console.log("ZiniPay Webhook Received:", JSON.stringify(data, null, 2));
@@ -313,7 +269,6 @@ app.all("/api/payment/webhook", async (req, res) => {
     const status = data.status || data.payment_status || data.data?.status;
     const invoiceId = data.invoiceId || data.invoice_id || data.data?.invoiceId;
     const transactionId = data.transactionId || data.transaction_id || data.data?.transactionId || invoiceId;
-    const amount = data.amount || data.data?.amount || '0';
     
     // metadata might be at root or inside data
     const metadata = data.metadata || data.data?.metadata;
@@ -323,7 +278,7 @@ app.all("/api/payment/webhook", async (req, res) => {
 
     if (isSuccess && orderId) {
       // Use the secure RPC function to update the order and bypass RLS
-      const { data: rpcResult, error: rpcError } = await supabase.rpc('process_payment', {
+      const { data: rpcResult, error: rpcError } = await supabase.rpc('complete_payment', {
         p_order_id: orderId,
         p_txn_id: transactionId
       });
@@ -331,22 +286,18 @@ app.all("/api/payment/webhook", async (req, res) => {
       if (rpcError) {
         console.error("HGP Webhook RPC Error:", rpcError);
       } else if (rpcResult && rpcResult.success) {
-        console.log(`HGP Webhook: Order ${orderId} updated to PROCESSING via RPC`);
+        console.log(`HGP Webhook: Order ${orderId} updated to COMPLETED via RPC`);
         const order = rpcResult.order;
         const profile = rpcResult.profile;
         if (profile && profile.full_name) {
           order.customerName = profile.full_name;
         }
 
-        console.log("HGP Webhook: Sending Telegram notification to admin");
-        // Send the specific ZiniPay admin notification (screenshot format)
-        await sendZiniPayAdminNotification(orderId, amount, transactionId, 'success');
-      } else if (rpcResult && rpcResult.already_processed) {
-        console.log(`HGP Webhook: Order ${orderId} is already PROCESSING/COMPLETED, skipping notification.`);
+        console.log("HGP Webhook: Sending Telegram notification");
+        await sendTelegramNotification(order);
+      } else if (rpcResult && rpcResult.already_completed) {
+        console.log(`HGP Webhook: Order ${orderId} is already COMPLETED, skipping notification.`);
       }
-    } else if (!isSuccess && orderId) {
-      // Optional: Send failed notification
-      await sendZiniPayAdminNotification(orderId, amount, transactionId || 'N/A', 'failed');
     }
 
     res.json({ success: true });
@@ -372,16 +323,13 @@ app.post("/api/notifications/email", async (req, res) => {
     });
 
     const isCompleted = order.status === 'COMPLETED';
-    const isProcessing = order.status === 'PROCESSING';
     const isCancelled = order.status === 'CANCELLED';
     
     let subject = isCompleted 
       ? `Order Delivery Complete - HGP #${order.id}`
-      : isProcessing
-        ? `Payment Successful - Order Processing - HGP #${order.id}`
-        : isCancelled
-          ? `Order Rejected/Cancelled - HGP #${order.id}`
-          : `Order Confirmation - HGP #${order.id}`;
+      : isCancelled
+        ? `Order Rejected/Cancelled - HGP #${order.id}`
+        : `Order Confirmation - HGP #${order.id}`;
 
     if (isAdminAlert) {
       subject = `🚨 NEW ORDER RECEIVED - HGP #${order.id}`;
@@ -397,14 +345,11 @@ app.post("/api/notifications/email", async (req, res) => {
           : isCompleted 
             ? `<p style="color: #16a34a; font-weight: bold; font-size: 18px;">Your order has been successfully processed and deployed!</p>
                <p>The items have been added to your account. Thank you for choosing HGP.</p>`
-            : isProcessing
-              ? `<p style="color: #eab308; font-weight: bold; font-size: 18px;">Payment Successful! Your order is now processing.</p>
-                 <p>Our admins will manually review and complete your order shortly.</p>`
-              : isCancelled
-                ? `<p style="color: #dc2626; font-weight: bold; font-size: 18px;">Your order has been rejected or cancelled.</p>
-                   <p>If you have already paid, please contact support with your Transaction ID for a refund or manual processing.</p>`
-                : `<p>Thank you for your order! We have received your request and it is being processed.</p>
-                   <p>Deployment usually takes 5-30 minutes.</p>`
+            : isCancelled
+              ? `<p style="color: #dc2626; font-weight: bold; font-size: 18px;">Your order has been rejected or cancelled.</p>
+                 <p>If you have already paid, please contact support with your Transaction ID for a refund or manual processing.</p>`
+              : `<p>Thank you for your order! We have received your request and it is being processed.</p>
+                 <p>Deployment usually takes 5-30 minutes.</p>`
         }
         <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
         <h3>Order Summary:</h3>

@@ -38,17 +38,14 @@ serve(async (req) => {
 
     // Build the "Crimson Intel Report"
     const isCompleted = order.status === 'COMPLETED';
-    const isProcessing = order.status === 'PROCESSING';
     let message = isCompleted 
       ? `<b>✅ ORDER COMPLETED</b>\n`
-      : isProcessing
-        ? `<b>⏳ ORDER PROCESSING</b>\n`
-        : `<b>🚨 NEW ORDER RECEIVED</b>\n`;
+      : `<b>🚨 NEW ORDER RECEIVED</b>\n`;
     
     message += `<code>REF: ${escapeHTML(order.id)}</code>\n`;
     message += `━━━━━━━━━━━━━━━━━━━━\n\n`;
 
-    if (!isCompleted && !isProcessing) {
+    if (!isCompleted) {
       order.items.forEach((item: any, index: number) => {
         message += `<b>📦 PRODUCT:</b> ${escapeHTML(item.gameTitle)}\n`;
         message += `<b>💎 PACKAGE:</b> ${escapeHTML(item.packageName)}\n`;

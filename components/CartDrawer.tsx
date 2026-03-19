@@ -71,9 +71,6 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
         const data = await response.json();
         
         if (data.status && data.payment_url) {
-          // Use the invoiceId from ZiniPay if available, otherwise fallback to orderId
-          (orderData as any).transactionId = data.invoiceId || data.payment_id || orderId;
-          
           // Save order to DB before redirecting
           const success = await addOrder(orderData);
           if (!success) {

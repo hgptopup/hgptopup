@@ -37,7 +37,7 @@ const Profile: React.FC<ProfileProps> = ({ onBack, onOpenAdmin }) => {
   // Calculate total spent (Purchase Balance) based on order history
   const purchaseBalance = useMemo(() => {
     return orders
-      .filter(order => order.status === 'COMPLETED' || order.status === 'PROCESSING' || order.status === 'PENDING')
+      .filter(order => order.status === 'COMPLETED' || order.status === 'PENDING')
       .reduce((acc, order) => acc + (Number(order.totalAmount) || 0), 0);
   }, [orders]);
 
@@ -190,7 +190,7 @@ const Profile: React.FC<ProfileProps> = ({ onBack, onOpenAdmin }) => {
                       <div className="flex items-center justify-between sm:justify-end gap-8">
                         <div className="text-right">
                           <p className="font-display text-lg font-bold text-slate-900">৳{(Number(order.totalAmount) || 0).toFixed(0)}</p>
-                          <p className={`text-xs font-bold uppercase tracking-widest mt-1 ${order.status === 'COMPLETED' ? 'text-green-600' : order.status === 'PROCESSING' ? 'text-yellow-600' : 'text-red-600'}`}>
+                          <p className={`text-xs font-bold uppercase tracking-widest mt-1 ${order.status === 'COMPLETED' ? 'text-green-600' : 'text-red-600'}`}>
                             {order.status}
                           </p>
                         </div>
@@ -274,7 +274,7 @@ const Profile: React.FC<ProfileProps> = ({ onBack, onOpenAdmin }) => {
                 <div className="bg-white p-6 rounded-3xl border border-black/5 space-y-4 shadow-sm">
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Status</span>
-                    <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${selectedOrder.status === 'COMPLETED' ? 'bg-green-100 text-green-600' : selectedOrder.status === 'PROCESSING' ? 'bg-yellow-100 text-yellow-600' : 'bg-red-100 text-red-600'}`}>
+                    <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${selectedOrder.status === 'COMPLETED' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
                       {selectedOrder.status}
                     </span>
                   </div>

@@ -59,7 +59,7 @@ export interface Order {
   customerName?: string;
   items: CartItem[];
   totalAmount: number;
-  status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'CANCELLED';
+  status: 'PENDING' | 'COMPLETED' | 'CANCELLED';
   createdAt: string;
   transactionId?: string;
   paymentMethod?: string;

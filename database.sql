@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS public.orders (
   customer_name TEXT,
   items JSONB NOT NULL DEFAULT '[]'::jsonb,
   total_amount NUMERIC NOT NULL,
-  status TEXT DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'PROCESSING', 'COMPLETED', 'CANCELLED')),
+  status TEXT DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'COMPLETED', 'CANCELLED')),
   transaction_id TEXT,
   payment_method TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()

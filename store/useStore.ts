@@ -336,9 +336,9 @@ export const useStore = create<AppState>((set, get) => ({
       let newlyCompleted = false;
       if (currentOrders.length > 0) {
         data.forEach(newOrder => {
-          if (newOrder.status === 'PROCESSING' || newOrder.status === 'COMPLETED') {
+          if (newOrder.status === 'COMPLETED') {
             const oldOrder = currentOrders.find(o => o.id === newOrder.id);
-            if (oldOrder && oldOrder.status !== 'PROCESSING' && oldOrder.status !== 'COMPLETED') {
+            if (oldOrder && oldOrder.status !== 'COMPLETED') {
               newlyCompleted = true;
             }
           }
@@ -395,8 +395,8 @@ export const useStore = create<AppState>((set, get) => ({
   updateOrderStatus: async (orderId, status) => {
     const { error } = await supabase.from('orders').update({ status }).eq('id', orderId);
     if (!error) {
-      // If status is COMPLETED, PROCESSING or CANCELLED, send email to user
-      if (status === 'COMPLETED' || status === 'PROCESSING' || status === 'CANCELLED') {
+      // If status is COMPLETED or CANCELLED, send email to user
+      if (status === 'COMPLETED' || status === 'CANCELLED') {
         const order = get().allOrders.find(o => o.id === orderId);
         const targetProfile = get().allUsers.find(u => u.id === order?.userId);
         

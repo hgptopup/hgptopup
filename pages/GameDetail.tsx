@@ -178,9 +178,6 @@ const GameDetail: React.FC<GameDetailProps> = ({ game, onBack, onOpenAuth }) => 
       const data = await response.json();
       
       if (data.status && data.payment_url) {
-        // Use the invoiceId from ZiniPay if available, otherwise fallback to orderId
-        (orderData as any).transactionId = data.invoiceId || data.payment_id || orderId;
-        
         const success = await addOrder(orderData);
         if (!success) {
           alert("Failed to save order. Please try again.");
