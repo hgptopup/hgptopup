@@ -485,8 +485,8 @@ app.post("/api/notifications/email", async (req, res) => {
 // Telegram Notification Route
 app.post("/api/notifications/telegram", async (req, res) => {
   try {
-    const { order } = req.body;
-    const result = await sendTelegramNotification(order);
+    const { order, isPaymentVerified } = req.body;
+    const result = await sendTelegramNotification(order, isPaymentVerified);
     
     if (result.success) {
       res.json({ success: true });
