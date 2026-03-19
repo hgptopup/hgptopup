@@ -264,17 +264,7 @@ app.post("/api/payment/verify", async (req, res) => {
     const orderId = metadata?.orderId || data.orderId || data.order_id;
 
     if (isSuccess && orderId) {
-      // Try to update the order transaction ID using the Supabase client
-      const { error: updateError } = await supabase
-        .from('orders')
-        .update({ transaction_id: actualTransactionId })
-        .eq('id', orderId);
-
-      if (updateError) {
-        console.error("HGP Verify Update Error:", updateError);
-      }
-      
-      // Fetch the order to send the notification
+      // Fetch the order FIRST to check its current state
       const { data: order } = await supabase
         .from('orders')
         .select('*')
@@ -282,8 +272,23 @@ app.post("/api/payment/verify", async (req, res) => {
         .single();
 
       if (order) {
-        if (order.status === 'COMPLETED') {
-          console.log(`HGP Verify: Order ${orderId} is already COMPLETED, skipping notification.`);
+        // If it's already completed OR already has a real transaction ID, skip notification
+        const alreadyVerified = order.status === 'COMPLETED' || (order.transaction_id && order.transaction_id !== 'PENDING_ZINIPAY');
+        
+        // Update the order transaction ID if it's not already updated
+        if (order.transaction_id !== actualTransactionId) {
+          const { error: updateError } = await supabase
+            .from('orders')
+            .update({ transaction_id: actualTransactionId })
+            .eq('id', orderId);
+
+          if (updateError) {
+            console.error("HGP Verify Update Error:", updateError);
+          }
+        }
+
+        if (alreadyVerified) {
+          console.log(`HGP Verify: Order ${orderId} is already verified, skipping notification.`);
         } else {
           order.transactionId = actualTransactionId; // Ensure transactionId is set for the notification
           const { data: profile } = await supabase
@@ -329,17 +334,7 @@ app.post("/api/payment/webhook", async (req, res) => {
     const isSuccess = ['success', 'COMPLETED', 'completed', 'PAID', 'paid'].includes(status);
 
     if (isSuccess && orderId) {
-      // Try to update the order transaction ID using the Supabase client
-      const { error: updateError } = await supabase
-        .from('orders')
-        .update({ transaction_id: transactionId })
-        .eq('id', orderId);
-
-      if (updateError) {
-        console.error("HGP Webhook Update Error:", updateError);
-      }
-      
-      // Fetch the order to send the notification
+      // Fetch the order FIRST to check its current state
       const { data: order } = await supabase
         .from('orders')
         .select('*')
@@ -347,8 +342,23 @@ app.post("/api/payment/webhook", async (req, res) => {
         .single();
 
       if (order) {
-        if (order.status === 'COMPLETED') {
-          console.log(`HGP Webhook: Order ${orderId} is already COMPLETED, skipping notification.`);
+        // If it's already completed OR already has a real transaction ID, skip notification
+        const alreadyVerified = order.status === 'COMPLETED' || (order.transaction_id && order.transaction_id !== 'PENDING_ZINIPAY');
+        
+        // Update the order transaction ID if it's not already updated
+        if (order.transaction_id !== transactionId) {
+          const { error: updateError } = await supabase
+            .from('orders')
+            .update({ transaction_id: transactionId })
+            .eq('id', orderId);
+
+          if (updateError) {
+            console.error("HGP Webhook Update Error:", updateError);
+          }
+        }
+
+        if (alreadyVerified) {
+          console.log(`HGP Webhook: Order ${orderId} is already verified, skipping notification.`);
         } else {
           order.transactionId = transactionId; // Ensure transactionId is set for the notification
           const { data: profile } = await supabase
