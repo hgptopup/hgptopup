@@ -152,7 +152,7 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SU
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Proxy Routes for Public Data (to avoid client-side fetch errors)
-app.get("/api/public/games", async (req, res) => {
+app.get("/api/public/products", async (req, res) => {
   try {
     const { data, error } = await supabase.from('games').select('*').order('created_at', { ascending: false });
     if (error) throw error;
@@ -162,7 +162,7 @@ app.get("/api/public/games", async (req, res) => {
   }
 });
 
-app.get("/api/public/hero-banners", async (req, res) => {
+app.get("/api/public/banners", async (req, res) => {
   try {
     const { data, error } = await supabase.from('hero_banners').select('*').order('created_at', { ascending: false });
     if (error) throw error;
@@ -172,7 +172,7 @@ app.get("/api/public/hero-banners", async (req, res) => {
   }
 });
 
-app.get("/api/public/floating-icons", async (req, res) => {
+app.get("/api/public/icons", async (req, res) => {
   try {
     const { data, error } = await supabase.from('hero_floating_icons').select('*').order('created_at', { ascending: false });
     if (error) throw error;
@@ -182,7 +182,7 @@ app.get("/api/public/floating-icons", async (req, res) => {
   }
 });
 
-app.get("/api/public/site-settings", async (req, res) => {
+app.get("/api/public/settings", async (req, res) => {
   try {
     const { data, error } = await supabase.from('site_settings').select('logo_url').eq('id', 'main').maybeSingle();
     if (error) throw error;
@@ -309,7 +309,6 @@ app.post("/api/payment/verify", async (req, res) => {
           }
 
           console.log("HGP Verify: Sending Telegram notification");
-          await sendTelegramNotification(order, true);
           await sendZiniPayVerificationNotification(orderId, order.totalAmount || order.total_amount || 0, actualTransactionId);
         }
       }
@@ -386,7 +385,6 @@ app.post("/api/payment/webhook", async (req, res) => {
           }
 
           console.log("HGP Webhook: Sending Telegram notification");
-          await sendTelegramNotification(order, true);
           await sendZiniPayVerificationNotification(orderId, order.totalAmount || order.total_amount || 0, transactionId);
         }
       }
@@ -579,7 +577,7 @@ async function startServer() {
     });
   }
 
-  if (process.env.NODE_ENV !== "production" && process.env.VERCEL !== "1") {
+  if (process.env.VERCEL !== "1") {
     app.listen(PORT, "0.0.0.0", () => {
       console.log(`Server running on http://localhost:${PORT}`);
     });
