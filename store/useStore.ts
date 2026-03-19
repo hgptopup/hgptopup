@@ -139,11 +139,12 @@ export const useStore = create<AppState>((set, get) => ({
 
   fetchGames: async () => {
     try {
-      const response = await fetch('/api/public/products');
+      const response = await fetch('/api/public/games');
       if (!response.ok) throw new Error('Failed to fetch games');
       const data = await response.json();
       set({ games: data });
     } catch (e) {
+      console.error("HGP FETCH ERROR (fetchGames):", e);
       // Fallback to direct Supabase if proxy fails
       try {
         const { data, error } = await supabase.from('games').select('*').order('created_at', { ascending: false });
@@ -154,11 +155,12 @@ export const useStore = create<AppState>((set, get) => ({
 
   fetchHeroBanners: async () => {
     try {
-      const response = await fetch('/api/public/banners');
+      const response = await fetch('/api/public/hero-banners');
       if (!response.ok) throw new Error('Failed to fetch hero banners');
       const data = await response.json();
       set({ heroBanners: data });
     } catch (e) {
+      console.error("HGP FETCH ERROR (fetchHeroBanners):", e);
       // Fallback
       try {
         const { data, error } = await supabase.from('hero_banners').select('*').order('created_at', { ascending: false });
@@ -212,11 +214,12 @@ export const useStore = create<AppState>((set, get) => ({
 
   fetchFloatingIcons: async () => {
     try {
-      const response = await fetch('/api/public/icons');
+      const response = await fetch('/api/public/floating-icons');
       if (!response.ok) throw new Error('Failed to fetch floating icons');
       const data = await response.json();
       set({ floatingIcons: data });
     } catch (e) {
+      console.error("HGP FETCH ERROR (fetchFloatingIcons):", e);
       // Fallback
       try {
         const { data, error } = await supabase.from('hero_floating_icons').select('*').order('created_at', { ascending: false });
@@ -258,11 +261,12 @@ export const useStore = create<AppState>((set, get) => ({
 
   fetchSiteSettings: async () => {
     try {
-      const response = await fetch('/api/public/settings');
+      const response = await fetch('/api/public/site-settings');
       if (!response.ok) throw new Error('Failed to fetch site settings');
       const data = await response.json();
       if (data) set({ logoUrl: data.logo_url });
     } catch (e) {
+      console.error("HGP FETCH ERROR (fetchSiteSettings):", e);
       // Fallback
       try {
         const { data, error } = await supabase.from('site_settings').select('logo_url').eq('id', 'main').maybeSingle();
@@ -332,9 +336,9 @@ export const useStore = create<AppState>((set, get) => ({
       let newlyCompleted = false;
       if (currentOrders.length > 0) {
         data.forEach(newOrder => {
-          if (newOrder.status === 'COMPLETED') {
+          if (newOrder.status === 'PROCESSING' || newOrder.status === 'COMPLETED') {
             const oldOrder = currentOrders.find(o => o.id === newOrder.id);
-            if (oldOrder && oldOrder.status !== 'COMPLETED') {
+            if (oldOrder && oldOrder.status !== 'PROCESSING' && oldOrder.status !== 'COMPLETED') {
               newlyCompleted = true;
             }
           }
@@ -391,8 +395,8 @@ export const useStore = create<AppState>((set, get) => ({
   updateOrderStatus: async (orderId, status) => {
     const { error } = await supabase.from('orders').update({ status }).eq('id', orderId);
     if (!error) {
-      // If status is COMPLETED or CANCELLED, send email to user
-      if (status === 'COMPLETED' || status === 'CANCELLED') {
+      // If status is COMPLETED, PROCESSING or CANCELLED, send email to user
+      if (status === 'COMPLETED' || status === 'PROCESSING' || status === 'CANCELLED') {
         const order = get().allOrders.find(o => o.id === orderId);
         const targetProfile = get().allUsers.find(u => u.id === order?.userId);
         

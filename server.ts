@@ -152,7 +152,7 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SU
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Proxy Routes for Public Data (to avoid client-side fetch errors)
-app.get("/api/public/products", async (req, res) => {
+app.get("/api/public/games", async (req, res) => {
   try {
     const { data, error } = await supabase.from('games').select('*').order('created_at', { ascending: false });
     if (error) throw error;
@@ -162,7 +162,7 @@ app.get("/api/public/products", async (req, res) => {
   }
 });
 
-app.get("/api/public/banners", async (req, res) => {
+app.get("/api/public/hero-banners", async (req, res) => {
   try {
     const { data, error } = await supabase.from('hero_banners').select('*').order('created_at', { ascending: false });
     if (error) throw error;
@@ -172,7 +172,7 @@ app.get("/api/public/banners", async (req, res) => {
   }
 });
 
-app.get("/api/public/icons", async (req, res) => {
+app.get("/api/public/floating-icons", async (req, res) => {
   try {
     const { data, error } = await supabase.from('hero_floating_icons').select('*').order('created_at', { ascending: false });
     if (error) throw error;
@@ -182,7 +182,7 @@ app.get("/api/public/icons", async (req, res) => {
   }
 });
 
-app.get("/api/public/settings", async (req, res) => {
+app.get("/api/public/site-settings", async (req, res) => {
   try {
     const { data, error } = await supabase.from('site_settings').select('logo_url').eq('id', 'main').maybeSingle();
     if (error) throw error;
@@ -259,15 +259,22 @@ app.post("/api/payment/verify", async (req, res) => {
     
     const actualTransactionId = data.transactionId || data.transaction_id || data.data?.transactionId || invoiceId;
     
-    // Extract orderId from metadata if available, or use the one passed from frontend
-    let parsedMetadata = data.metadata || data.data?.metadata;
-    if (typeof parsedMetadata === 'string') {
-      try { parsedMetadata = JSON.parse(parsedMetadata); } catch(e) {}
-    }
-    const orderId = parsedMetadata?.orderId || data.orderId || data.order_id || req.body.orderId;
+    // Extract orderId from metadata if available
+    const metadata = data.metadata || data.data?.metadata;
+    const orderId = metadata?.orderId || data.orderId || data.order_id;
 
     if (isSuccess && orderId) {
-      // Fetch the order FIRST to check its current state
+      // Try to update the order transaction ID using the Supabase client
+      const { error: updateError } = await supabase
+        .from('orders')
+        .update({ transaction_id: actualTransactionId })
+        .eq('id', orderId);
+
+      if (updateError) {
+        console.error("HGP Verify Update Error:", updateError);
+      }
+      
+      // Fetch the order to send the notification
       const { data: order } = await supabase
         .from('orders')
         .select('*')
@@ -275,28 +282,9 @@ app.post("/api/payment/verify", async (req, res) => {
         .single();
 
       if (order) {
-        // If it's already completed OR already has a real transaction ID, skip notification
-        const alreadyVerified = order.status === 'COMPLETED' || (order.transaction_id && order.transaction_id !== 'PENDING_ZINIPAY');
-        
-        // Update the order transaction ID atomically to prevent race conditions
-        const { data: updatedOrder, error: updateError } = await supabase
-          .from('orders')
-          .update({ transaction_id: actualTransactionId })
-          .eq('id', orderId)
-          .eq('transaction_id', 'PENDING_ZINIPAY')
-          .select()
-          .maybeSingle();
-
-        if (updateError) {
-          console.error("HGP Verify Update Error:", updateError);
-        }
-
-        // If updatedOrder is null, it means another request already updated it
-        const isFirstVerification = !!updatedOrder;
-
-        if (alreadyVerified) {
-          console.log(`HGP Verify: Order ${orderId} is already verified, skipping notification.`);
-        } else if (isFirstVerification) {
+        if (order.status === 'COMPLETED') {
+          console.log(`HGP Verify: Order ${orderId} is already COMPLETED, skipping notification.`);
+        } else {
           order.transactionId = actualTransactionId; // Ensure transactionId is set for the notification
           const { data: profile } = await supabase
             .from('profiles')
@@ -309,6 +297,7 @@ app.post("/api/payment/verify", async (req, res) => {
           }
 
           console.log("HGP Verify: Sending Telegram notification");
+          await sendTelegramNotification(order, true);
           await sendZiniPayVerificationNotification(orderId, order.totalAmount || order.total_amount || 0, actualTransactionId);
         }
       }
@@ -334,16 +323,23 @@ app.post("/api/payment/webhook", async (req, res) => {
     const transactionId = data.transactionId || data.transaction_id || data.data?.transactionId || invoiceId;
     
     // metadata might be at root or inside data
-    let parsedMetadata = data.metadata || data.data?.metadata;
-    if (typeof parsedMetadata === 'string') {
-      try { parsedMetadata = JSON.parse(parsedMetadata); } catch(e) {}
-    }
-    const orderId = parsedMetadata?.orderId || data.orderId || data.order_id;
+    const metadata = data.metadata || data.data?.metadata;
+    const orderId = metadata?.orderId || data.orderId || data.order_id;
 
     const isSuccess = ['success', 'COMPLETED', 'completed', 'PAID', 'paid'].includes(status);
 
     if (isSuccess && orderId) {
-      // Fetch the order FIRST to check its current state
+      // Try to update the order transaction ID using the Supabase client
+      const { error: updateError } = await supabase
+        .from('orders')
+        .update({ transaction_id: transactionId })
+        .eq('id', orderId);
+
+      if (updateError) {
+        console.error("HGP Webhook Update Error:", updateError);
+      }
+      
+      // Fetch the order to send the notification
       const { data: order } = await supabase
         .from('orders')
         .select('*')
@@ -351,28 +347,9 @@ app.post("/api/payment/webhook", async (req, res) => {
         .single();
 
       if (order) {
-        // If it's already completed OR already has a real transaction ID, skip notification
-        const alreadyVerified = order.status === 'COMPLETED' || (order.transaction_id && order.transaction_id !== 'PENDING_ZINIPAY');
-        
-        // Update the order transaction ID atomically to prevent race conditions
-        const { data: updatedOrder, error: updateError } = await supabase
-          .from('orders')
-          .update({ transaction_id: transactionId })
-          .eq('id', orderId)
-          .eq('transaction_id', 'PENDING_ZINIPAY')
-          .select()
-          .maybeSingle();
-
-        if (updateError) {
-          console.error("HGP Webhook Update Error:", updateError);
-        }
-
-        // If updatedOrder is null, it means another request already updated it
-        const isFirstVerification = !!updatedOrder;
-
-        if (alreadyVerified) {
-          console.log(`HGP Webhook: Order ${orderId} is already verified, skipping notification.`);
-        } else if (isFirstVerification) {
+        if (order.status === 'COMPLETED') {
+          console.log(`HGP Webhook: Order ${orderId} is already COMPLETED, skipping notification.`);
+        } else {
           order.transactionId = transactionId; // Ensure transactionId is set for the notification
           const { data: profile } = await supabase
             .from('profiles')
@@ -385,6 +362,7 @@ app.post("/api/payment/webhook", async (req, res) => {
           }
 
           console.log("HGP Webhook: Sending Telegram notification");
+          await sendTelegramNotification(order, true);
           await sendZiniPayVerificationNotification(orderId, order.totalAmount || order.total_amount || 0, transactionId);
         }
       }
@@ -485,8 +463,8 @@ app.post("/api/notifications/email", async (req, res) => {
 // Telegram Notification Route
 app.post("/api/notifications/telegram", async (req, res) => {
   try {
-    const { order, isPaymentVerified } = req.body;
-    const result = await sendTelegramNotification(order, isPaymentVerified);
+    const { order } = req.body;
+    const result = await sendTelegramNotification(order);
     
     if (result.success) {
       res.json({ success: true });
@@ -577,7 +555,7 @@ async function startServer() {
     });
   }
 
-  if (process.env.VERCEL !== "1") {
+  if (process.env.NODE_ENV !== "production" && process.env.VERCEL !== "1") {
     app.listen(PORT, "0.0.0.0", () => {
       console.log(`Server running on http://localhost:${PORT}`);
     });
