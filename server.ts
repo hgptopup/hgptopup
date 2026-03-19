@@ -292,7 +292,11 @@ app.post("/api/payment/verify", async (req, res) => {
 });
 
 // ZiniPay Webhook Route
-app.post("/api/payment/webhook", async (req, res) => {
+app.all("/api/payment/webhook", async (req, res) => {
+  if (req.method === 'GET') {
+    return res.send("ZiniPay Webhook Endpoint is Active. Please use POST for actual notifications.");
+  }
+  
   try {
     // Basic security: check for a secret token if provided in environment
     const webhookToken = process.env.ZINIPAY_WEBHOOK_TOKEN;
