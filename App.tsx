@@ -1,20 +1,23 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate, useLocation, useParams, Navigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import GameCard from './components/GameCard';
 import Footer from './components/Footer';
-import GameDetail from './pages/GameDetail';
-import Profile from './pages/Profile';
-import TermsOfService from './pages/TermsOfService';
-import RefundPolicy from './pages/RefundPolicy';
-import HelpCenter from './pages/HelpCenter';
-import AdminDashboard from './pages/AdminDashboard';
-import Cart from './pages/Cart';
-import Support from './pages/Support';
-import Payment from './pages/Payment';
+
+// Lazy load pages for better performance
+const GameDetail = lazy(() => import('./pages/GameDetail'));
+const Profile = lazy(() => import('./pages/Profile'));
+const TermsOfService = lazy(() => import('./pages/TermsOfService'));
+const RefundPolicy = lazy(() => import('./pages/RefundPolicy'));
+const HelpCenter = lazy(() => import('./pages/HelpCenter'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const Cart = lazy(() => import('./pages/Cart'));
+const Support = lazy(() => import('./pages/Support'));
+const Payment = lazy(() => import('./pages/Payment'));
+
 import CartDrawer from './components/CartDrawer';
 import SupportModal from './components/SupportModal';
 import AuthModal from './components/AuthModal';
@@ -24,6 +27,13 @@ import PopupModal from './components/PopupModal';
 import { Game, PopupOption } from './types';
 import { useStore } from './store/useStore';
 import { supabase } from './services/supabaseClient';
+
+// Loading fallback component
+const PageLoader = () => (
+  <div className="min-h-[60vh] flex items-center justify-center">
+    <div className="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin" />
+  </div>
+);
 
 const getSlug = (title: string) => title.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
 
@@ -447,68 +457,70 @@ const AppContent: React.FC = () => {
       </AnimatePresence>
 
       <AnimatePresence mode="wait">
-        <Routes location={location}>
-          <Route path="/" element={
-            <Home 
-              searchQuery={searchQuery} 
-              setSearchQuery={setSearchQuery} 
-              filteredGames={filteredGames} 
-              handleGameClick={handleGameClick}
-              setIsSupportOpen={setIsSupportOpen}
-            />
-          } />
-          <Route path="/shop" element={<Navigate to="/" replace />} />
-          <Route path="/shop/*" element={<Navigate to="/" replace />} />
-          <Route path="/store/*" element={<Navigate to="/" replace />} />
-          
-          <Route path="/game/:gameId" element={
-            <GameDetailWrapper 
-              activeGames={activeGames} 
-              onBack={handleGoHome} 
-              onOpenAuth={() => setIsAuthModalOpen(true)} 
-            />
-          } />
-          
-          <Route path="/store/:storeName" element={
-            <GameDetailWrapper 
-              activeGames={activeGames} 
-              onBack={handleGoHome} 
-              onOpenAuth={() => setIsAuthModalOpen(true)} 
-            />
-          } />
-          
-          <Route path="/profile" element={
-            isAuthenticated ? (
-              <Profile onBack={handleGoHome} onOpenAdmin={handleOpenAdmin} />
-            ) : (
-              <Navigate to="/" replace />
-            )
-          } />
-          
-          <Route path="/admin" element={
-            isAdmin ? (
-              <AdminDashboard />
-            ) : (
-              <Navigate to="/" replace />
-            )
-          } />
-          
-          <Route path="/terms" element={<TermsOfService onBack={handleGoHome} />} />
-          <Route path="/refund" element={<RefundPolicy onBack={handleGoHome} />} />
-          <Route path="/help" element={
-            <HelpCenter 
-              onBack={handleGoHome} 
-              onOpenSupport={() => navigate('/support')}
-            />
-          } />
-          
-          <Route path="/cart" element={<Cart />} />
-          <Route path="/support" element={<Support />} />
-          <Route path="/payment" element={<Payment />} />
-          <Route path="/Payment" element={<Navigate to="/payment" replace />} />
-          
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        <Suspense fallback={<PageLoader />}>
+          <Routes location={location}>
+            <Route path="/" element={
+              <Home 
+                searchQuery={searchQuery} 
+                setSearchQuery={setSearchQuery} 
+                filteredGames={filteredGames} 
+                handleGameClick={handleGameClick}
+                setIsSupportOpen={setIsSupportOpen}
+              />
+            } />
+            <Route path="/shop" element={<Navigate to="/" replace />} />
+            <Route path="/shop/*" element={<Navigate to="/" replace />} />
+            <Route path="/store/*" element={<Navigate to="/" replace />} />
+            
+            <Route path="/game/:gameId" element={
+              <GameDetailWrapper 
+                activeGames={activeGames} 
+                onBack={handleGoHome} 
+                onOpenAuth={() => setIsAuthModalOpen(true)} 
+              />
+            } />
+            
+            <Route path="/store/:storeName" element={
+              <GameDetailWrapper 
+                activeGames={activeGames} 
+                onBack={handleGoHome} 
+                onOpenAuth={() => setIsAuthModalOpen(true)} 
+              />
+            } />
+            
+            <Route path="/profile" element={
+              isAuthenticated ? (
+                <Profile onBack={handleGoHome} onOpenAdmin={handleOpenAdmin} />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            } />
+            
+            <Route path="/admin" element={
+              isAdmin ? (
+                <AdminDashboard />
+              ) : (
+                <Navigate to="/" replace />
+              )
+            } />
+            
+            <Route path="/terms" element={<TermsOfService onBack={handleGoHome} />} />
+            <Route path="/refund" element={<RefundPolicy onBack={handleGoHome} />} />
+            <Route path="/help" element={
+              <HelpCenter 
+                onBack={handleGoHome} 
+                onOpenSupport={() => navigate('/support')}
+              />
+            } />
+            
+            <Route path="/cart" element={<Cart />} />
+            <Route path="/support" element={<Support />} />
+            <Route path="/payment" element={<Payment />} />
+            <Route path="/Payment" element={<Navigate to="/payment" replace />} />
+            
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
       </AnimatePresence>
 
       <Footer 

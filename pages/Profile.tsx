@@ -10,7 +10,7 @@ interface ProfileProps {
 }
 
 const Profile: React.FC<ProfileProps> = ({ onBack, onOpenAdmin }) => {
-  const { user, orders, fetchOrders, logout, isAdmin, justCompletedOrder, setJustCompletedOrder } = useStore();
+  const { user, orders, fetchOrders, logout, isAdmin, justCompletedOrder, setJustCompletedOrder, bdtRate } = useStore();
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -38,8 +38,12 @@ const Profile: React.FC<ProfileProps> = ({ onBack, onOpenAdmin }) => {
   const purchaseBalance = useMemo(() => {
     return orders
       .filter(order => order.status === 'COMPLETED' || order.status === 'PROCESSING' || order.status === 'PENDING')
-      .reduce((acc, order) => acc + (Number(order.totalAmount) || 0), 0);
-  }, [orders]);
+      .reduce((acc, order) => {
+        const amount = Number(order.totalAmount) || 0;
+        const isUsdt = order.paymentMethod?.toLowerCase().includes('usdt');
+        return acc + (isUsdt ? amount * bdtRate : amount);
+      }, 0);
+  }, [orders, bdtRate]);
 
   const stats = [
     { label: 'Purchase Balance', value: `৳${purchaseBalance.toFixed(0)}`, icon: '💰', color: 'text-green-500' },
@@ -189,7 +193,11 @@ const Profile: React.FC<ProfileProps> = ({ onBack, onOpenAdmin }) => {
                       </div>
                       <div className="flex items-center justify-between sm:justify-end gap-8">
                         <div className="text-right">
-                          <p className="font-display text-lg font-bold text-slate-900">৳{(Number(order.totalAmount) || 0).toFixed(0)}</p>
+                          <p className="font-display text-lg font-bold text-slate-900">
+                            {order.paymentMethod?.toLowerCase().includes('usdt') ? '$' : '৳'}
+                            {(Number(order.totalAmount) || 0).toFixed(order.paymentMethod?.toLowerCase().includes('usdt') ? 2 : 0)}
+                            {order.paymentMethod?.toLowerCase().includes('usdt') && <span className="text-[10px] ml-1 text-slate-400">USDT</span>}
+                          </p>
                           <p className={`text-xs font-bold uppercase tracking-widest mt-1 ${order.status === 'COMPLETED' ? 'text-green-600' : order.status === 'PROCESSING' ? 'text-yellow-600' : 'text-red-600'}`}>
                             {order.status}
                           </p>
@@ -271,24 +279,51 @@ const Profile: React.FC<ProfileProps> = ({ onBack, onOpenAdmin }) => {
                   )}
                 </div>
 
-                <div className="bg-white p-6 rounded-3xl border border-black/5 space-y-4 shadow-sm">
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Status</span>
-                    <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${selectedOrder.status === 'COMPLETED' ? 'bg-green-100 text-green-600' : selectedOrder.status === 'PROCESSING' ? 'bg-yellow-100 text-yellow-600' : 'bg-red-100 text-red-600'}`}>
-                      {selectedOrder.status}
-                    </span>
+                  <div className="bg-white p-6 rounded-3xl border border-black/5 space-y-4 shadow-sm">
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Status</span>
+                      <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${selectedOrder.status === 'COMPLETED' ? 'bg-green-100 text-green-600' : selectedOrder.status === 'PROCESSING' ? 'bg-yellow-100 text-yellow-600' : 'bg-red-100 text-red-600'}`}>
+                        {selectedOrder.status}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Date</span>
+                      <span className="text-slate-900 font-medium text-sm bg-black/5 px-3 py-1 rounded-lg">
+                        {new Date(selectedOrder.createdAt).toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center pt-4 border-t border-black/5">
+                      <div className="flex flex-col">
+                        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Total Charged</span>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                          {selectedOrder.paymentMethod}
+                        </span>
+                      </div>
+                      <span className="font-display font-bold text-xl text-red-600">
+                        {selectedOrder.paymentMethod?.toLowerCase().includes('usdt') ? '$' : '৳'}
+                        {(Number(selectedOrder.totalAmount) || 0).toFixed(selectedOrder.paymentMethod?.toLowerCase().includes('usdt') ? 2 : 0)}
+                        {selectedOrder.paymentMethod?.toLowerCase().includes('usdt') && <span className="text-xs ml-1">USDT</span>}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Date</span>
-                    <span className="text-slate-900 font-medium text-sm bg-black/5 px-3 py-1 rounded-lg">
-                      {new Date(selectedOrder.createdAt).toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center pt-4 border-t border-black/5">
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Total Charged</span>
-                    <span className="font-display font-bold text-xl text-red-600">৳{(Number(selectedOrder.totalAmount) || 0).toFixed(0)}</span>
-                  </div>
-                </div>
+
+                  {selectedOrder.screenshot && (
+                    <div className="bg-white p-5 rounded-2xl border border-black/5 space-y-3 shadow-sm">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Payment Proof</p>
+                      <div className="relative rounded-xl overflow-hidden border border-black/5 group/screenshot">
+                        <img 
+                          src={selectedOrder.screenshot} 
+                          alt="Payment Proof" 
+                          className="w-full h-auto max-h-[300px] object-contain cursor-zoom-in transition-transform duration-500 group-hover/screenshot:scale-105" 
+                          referrerPolicy="no-referrer"
+                          onClick={() => window.open(selectedOrder.screenshot!, '_blank')}
+                        />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/screenshot:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                          <p className="text-white text-[9px] font-bold uppercase tracking-widest">Click to view full size</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                 <button
                   onClick={() => setSelectedOrder(null)}

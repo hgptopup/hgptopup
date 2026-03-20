@@ -34,7 +34,9 @@ const AdminDashboard: React.FC = () => {
     deleteFloatingIcon,
     logoUrl,
     updateLogo,
-    setLogoUrl
+    setLogoUrl,
+    bdtRate,
+    updateBdtRate
   } = useStore();
   
   const [activeTab, setActiveTab] = useState<DashboardTab>('OPERATIONS');
@@ -43,11 +45,16 @@ const AdminDashboard: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [selectedOrderDetails, setSelectedOrderDetails] = useState<Order | null>(null);
+  const [localBdtRate, setLocalBdtRate] = useState(bdtRate);
   
   const portraitInputRef = useRef<HTMLInputElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
   const iconInputRef = useRef<HTMLInputElement>(null);
   const popupImageInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setLocalBdtRate(bdtRate);
+  }, [bdtRate]);
 
   // Game Modal State
   const [showGameModal, setShowGameModal] = useState(false);
@@ -91,14 +98,18 @@ const AdminDashboard: React.FC = () => {
   const stats = useMemo(() => {
     const ordersList = allOrders || [];
     const completed = ordersList.filter(o => o.status === 'COMPLETED');
-    const revenueValue = completed.reduce((acc, o) => acc + (Number(o.totalAmount) || 0), 0);
+    const revenueValue = completed.reduce((acc, o) => {
+      const amount = Number(o.totalAmount) || 0;
+      const isUsdt = o.paymentMethod?.toLowerCase().includes('usdt');
+      return acc + (isUsdt ? amount * bdtRate : amount);
+    }, 0);
     return {
       total: ordersList.length,
       revenue: revenueValue.toFixed(0),
       activeCatalog: (games || []).length,
       totalUsers: (allUsers || []).length
     };
-  }, [allOrders, games, allUsers]);
+  }, [allOrders, games, allUsers, bdtRate]);
 
   const filteredOrders = useMemo(() => {
     return (allOrders || []).filter(o => 
@@ -219,6 +230,18 @@ const AdminDashboard: React.FC = () => {
     let result = editingIcon ? await updateFloatingIcon(editingIcon.id, iconFormData) : await addFloatingIcon(iconFormData);
     if (result.success) { setShowIconModal(false); setEditingIcon(null); }
     else alert(`Save Failed: ${result.error}`);
+    setIsSubmitting(false);
+  };
+
+  const handleUpdateBdtRate = async () => {
+    if (localBdtRate <= 0) return alert("Rate must be greater than 0");
+    setIsSubmitting(true);
+    const success = await updateBdtRate(localBdtRate);
+    if (success) {
+      alert("BDT Rate updated successfully!");
+    } else {
+      alert("Failed to update Bdt Rate.");
+    }
     setIsSubmitting(false);
   };
 
@@ -486,7 +509,16 @@ const AdminDashboard: React.FC = () => {
                                    {order.status}
                                  </span>
                                </td>
-                               <td className="p-6 text-slate-900 font-bold">৳{Number(order.totalAmount).toFixed(0)}</td>
+                               <td className="p-6">
+                          <div className="flex flex-col">
+                            <span className="text-slate-900 font-bold">
+                              {order.paymentMethod?.toLowerCase().includes('usdt') ? '$' : '৳'}
+                              {Number(order.totalAmount).toFixed(order.paymentMethod?.toLowerCase().includes('usdt') ? 2 : 0)}
+                              {order.paymentMethod?.toLowerCase().includes('usdt') && <span className="text-[10px] ml-1 text-slate-400">USDT</span>}
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{order.paymentMethod}</span>
+                          </div>
+                        </td>
                                <td className="p-6 text-right space-x-2" onClick={(e) => e.stopPropagation()}>
                                  {(order.status === 'PENDING' || order.status === 'PROCESSING') && (
                                    <>
@@ -577,6 +609,65 @@ const AdminDashboard: React.FC = () => {
              </div>
           </motion.div>
         )}
+
+        {activeTab === 'BRANDING' && (
+          <motion.div key="branding" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="bg-[#FAF9F6] p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
+                <h3 className="font-display font-bold text-xl mb-6 text-slate-900">Currency <span className="text-red-600">Config</span></h3>
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 tracking-widest">BDT to USD Rate (1 USD = ? BDT)</label>
+                    <div className="flex gap-4">
+                      <input 
+                        type="number" 
+                        value={localBdtRate} 
+                        onChange={(e) => setLocalBdtRate(Number(e.target.value))}
+                        className="flex-1 bg-[#FAF9F6] border border-slate-200 rounded-2xl py-4 px-5 text-sm outline-none focus:border-red-600 text-slate-900 font-mono"
+                      />
+                      <button 
+                        onClick={handleUpdateBdtRate}
+                        disabled={isSubmitting}
+                        className="px-6 py-4 bg-red-600 text-[#FAF9F6] rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:bg-red-700 transition-all disabled:opacity-50"
+                      >
+                        {isSubmitting ? '...' : 'Update'}
+                      </button>
+                    </div>
+                    <p className="mt-2 text-[10px] text-slate-400">Current Rate: 1 USD = {bdtRate} BDT</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-[#FAF9F6] p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
+                <h3 className="font-display font-bold text-xl mb-6 text-slate-900">Site <span className="text-red-600">Logo</span></h3>
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 tracking-widest">Logo URL</label>
+                    <div className="flex gap-4">
+                      <input 
+                        type="text" 
+                        value={logoUrl || ''} 
+                        onChange={(e) => setLogoUrl(e.target.value)}
+                        className="flex-1 bg-[#FAF9F6] border border-slate-200 rounded-2xl py-4 px-5 text-sm outline-none focus:border-red-600 text-slate-900"
+                      />
+                      <button 
+                        onClick={() => logoUrl && updateLogo(logoUrl)}
+                        className="px-6 py-4 bg-red-600 text-[#FAF9F6] rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:bg-red-700 transition-all"
+                      >
+                        Update
+                      </button>
+                    </div>
+                  </div>
+                  {logoUrl && (
+                    <div className="mt-4 p-4 bg-white rounded-2xl border border-slate-100 inline-block">
+                      <img src={logoUrl} alt="Logo Preview" className="h-12 object-contain" referrerPolicy="no-referrer" />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
       </AnimatePresence>
 
       <AnimatePresence>
@@ -663,6 +754,24 @@ const AdminDashboard: React.FC = () => {
                       </div>
                     </div>
                   ))}
+
+                  {selectedOrderDetails.screenshot && (
+                    <div className="bg-[#FAF9F6]/5 p-6 rounded-3xl border border-[#FAF9F6]/5">
+                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-4">Payment Proof Screenshot</p>
+                      <div className="relative rounded-2xl overflow-hidden border border-[#FAF9F6]/10 shadow-2xl group/screenshot">
+                        <img 
+                          src={selectedOrderDetails.screenshot} 
+                          alt="Payment Proof" 
+                          className="w-full h-auto max-h-[400px] object-contain cursor-zoom-in transition-transform duration-500 group-hover/screenshot:scale-105" 
+                          referrerPolicy="no-referrer"
+                          onClick={() => window.open(selectedOrderDetails.screenshot, '_blank')}
+                        />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/screenshot:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                          <p className="text-[#FAF9F6] text-[10px] font-bold uppercase tracking-widest">Click to expand</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="flex gap-4 pt-4">
                     {(selectedOrderDetails.status === 'PENDING' || selectedOrderDetails.status === 'PROCESSING') && (

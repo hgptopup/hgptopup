@@ -61,7 +61,12 @@ const Navbar: React.FC<NavbarProps> = ({
             }}
           >
             <div className="relative shrink-0">
-              <img src={logoUrl || "https://i.imgur.com/VjpTmnL.png"} alt="Hasibul Game Point Logo" className="w-10 h-10 md:w-14 md:h-14 object-cover rounded-full border-2 border-red-600/50 group-hover:scale-110 transition-transform" />
+              <img 
+                src={logoUrl || "https://i.imgur.com/VjpTmnL.png"} 
+                alt="Hasibul Game Point Logo" 
+                className="w-10 h-10 md:w-14 md:h-14 object-cover rounded-full border-2 border-red-600/50 group-hover:scale-110 transition-transform" 
+                loading="lazy"
+              />
             </div>
             <span className="text-sm sm:text-xl md:text-2xl font-display font-bold text-[#FAF9F6] truncate">
               Hasibul <span className="text-red-600">Game Point</span>

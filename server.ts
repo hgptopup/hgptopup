@@ -63,8 +63,12 @@ const sendTelegramNotification = async (order: any, isPaymentVerified: boolean =
     const transactionId = order.transactionId || order.transaction_id || 'N/A';
     const customerName = order.customerName || order.customer_name || order.userId || order.user_id || 'Guest';
 
+    const isUsdt = paymentMethod.toLowerCase().includes('usdt');
+    const currencySymbol = isUsdt ? '$' : '৳';
+    const currencyLabel = isUsdt ? ' USDT' : '';
+
     message += `<b>👤 CUSTOMER:</b> ${escapeHTML(customerName)}\n`;
-    message += `<b>💵 TOTAL:</b> ৳${totalAmount}\n`;
+    message += `<b>💵 TOTAL:</b> ${currencySymbol}${totalAmount}${currencyLabel}\n`;
     message += `<b>💳 METHOD:</b> ${escapeHTML(paymentMethod)}\n`;
     message += `<b>🔑 TRX ID:</b> ${escapeHTML(transactionId)}\n\n`;
     
@@ -100,13 +104,34 @@ const sendTelegramNotification = async (order: any, isPaymentVerified: boolean =
       message += `<i>Awaiting payment or manual processing.</i>`;
     }
 
-    const telegramUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+    const telegramUrl = order.screenshot 
+      ? `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`
+      : `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
     
-    await axios.post(telegramUrl, {
-      chat_id: TELEGRAM_CHAT_ID,
-      text: message,
-      parse_mode: 'HTML'
-    });
+    if (order.screenshot) {
+      const formData = new (await import('form-data')).default();
+      formData.append('chat_id', TELEGRAM_CHAT_ID);
+      formData.append('caption', message);
+      formData.append('parse_mode', 'HTML');
+      
+      if (order.screenshot.startsWith('data:image')) {
+        const base64Data = order.screenshot.split(',')[1];
+        const buffer = Buffer.from(base64Data, 'base64');
+        formData.append('photo', buffer, { filename: 'screenshot.png' });
+      } else {
+        formData.append('photo', order.screenshot);
+      }
+
+      await axios.post(telegramUrl, formData, {
+        headers: formData.getHeaders()
+      });
+    } else {
+      await axios.post(telegramUrl, {
+        chat_id: TELEGRAM_CHAT_ID,
+        text: message,
+        parse_mode: 'HTML'
+      });
+    }
 
     return { success: true };
   } catch (error: any) {
@@ -184,11 +209,21 @@ app.get("/api/public/floating-icons", async (req, res) => {
 
 app.get("/api/public/site-settings", async (req, res) => {
   try {
-    const { data, error } = await supabase.from('site_settings').select('logo_url').eq('id', 'main').maybeSingle();
-    if (error) throw error;
-    res.json(data);
+    const { data: settings, error: settingsError } = await supabase.from('site_settings').select('logo_url, bdt_rate').eq('id', 'main').maybeSingle();
+    
+    // Log errors but don't crash/throw
+    if (settingsError) console.error("HGP DB ERROR (site_settings):", settingsError.message);
+    
+    res.json({ 
+      logo_url: settings?.logo_url || null,
+      bdt_rate: settings?.bdt_rate || 125
+    });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    console.error("HGP API ERROR (site-settings):", error.message);
+    res.json({ 
+      logo_url: null,
+      bdt_rate: 125
+    });
   }
 });
 
@@ -555,7 +590,7 @@ async function startServer() {
     });
   }
 
-  if (process.env.NODE_ENV !== "production" && process.env.VERCEL !== "1") {
+  if (process.env.VERCEL !== "1") {
     app.listen(PORT, "0.0.0.0", () => {
       console.log(`Server running on http://localhost:${PORT}`);
     });

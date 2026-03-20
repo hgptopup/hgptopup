@@ -5,7 +5,7 @@ import { useStore } from '../store/useStore';
 
 const Cart: React.FC = () => {
   const navigate = useNavigate();
-  const { cart, removeFromCart, addOrder, user } = useStore();
+  const { cart, removeFromCart, addOrder, user, bdtRate } = useStore();
   const [isProcessing, setIsProcessing] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   
@@ -144,7 +144,12 @@ const Cart: React.FC = () => {
                       <p className="text-xs font-mono text-red-600">ID: {item.playerId}</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold text-lg mb-2 text-slate-900">৳{item.price.toFixed(0)}</p>
+                      <p className="font-bold text-lg mb-1 text-slate-900">৳{item.price.toFixed(0)}</p>
+                      {bdtRate > 0 && (
+                        <p className="text-[10px] font-bold text-slate-400 mb-2">
+                          ${(item.price / bdtRate).toFixed(2)} USDT
+                        </p>
+                      )}
                       <button 
                         onClick={() => removeFromCart(item.cartId)}
                         className="text-slate-300 hover:text-red-600 transition-colors"
@@ -173,7 +178,14 @@ const Cart: React.FC = () => {
                   <span className="font-bold text-green-600">FREE</span>
                 </div>
                 <div className="pt-4 border-t border-black/5 flex justify-between items-center">
-                  <span className="font-bold text-slate-900">Total</span>
+                  <div className="flex flex-col">
+                    <span className="font-bold text-slate-900">Total</span>
+                    {bdtRate > 0 && (
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        ${(total / bdtRate).toFixed(2)} USDT
+                      </span>
+                    )}
+                  </div>
                   <span className="text-2xl font-display font-bold text-red-600">৳{total.toFixed(0)}</span>
                 </div>
               </div>

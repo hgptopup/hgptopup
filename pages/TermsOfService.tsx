@@ -14,7 +14,7 @@ const TermsOfService: React.FC<TermsOfServiceProps> = ({ onBack }) => {
     },
     {
       title: "Orders and Payment",
-      content: "Payments accepted via bKash, Nagad, Rocket, Upay, and other supported methods. Orders are processed after successful payment. Customers are responsible for providing accurate information."
+      content: "Payments accepted via bKash, Nagad, Binance, Upay, and other supported methods. Orders are processed after successful payment. Customers are responsible for providing accurate information."
     },
     {
       title: "Delivery Policy",

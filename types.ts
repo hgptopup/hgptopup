@@ -63,6 +63,7 @@ export interface Order {
   createdAt: string;
   transactionId?: string;
   paymentMethod?: string;
+  screenshot?: string;
 }
 
 export interface NavLink {

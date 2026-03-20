@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS public.orders (
   status TEXT DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'COMPLETED', 'CANCELLED')),
   transaction_id TEXT,
   payment_method TEXT,
+  screenshot TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -50,18 +51,23 @@ CREATE TABLE IF NOT EXISTS public.hero_floating_icons (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 5. SITE SETTINGS
+-- 4.1 HERO BANNERS
+CREATE TABLE IF NOT EXISTS public.hero_banners (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  title TEXT NOT NULL,
+  tag TEXT,
+  price_text TEXT DEFAULT '', 
+  image_url TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 5. SITE SETTINGS (Logo, Payment & Support)
 CREATE TABLE IF NOT EXISTS public.site_settings (
   id TEXT PRIMARY KEY DEFAULT 'main',
   logo_url TEXT,
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- 5.1 SITE CONFIG (Payment & Support)
-CREATE TABLE IF NOT EXISTS public.site_config (
-  id TEXT PRIMARY KEY DEFAULT 'main',
   payment_number TEXT,
   support_link TEXT,
+  bdt_rate NUMERIC DEFAULT 125,
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -70,8 +76,8 @@ ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.games ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.hero_floating_icons ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.hero_banners ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.site_settings ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.site_config ENABLE ROW LEVEL SECURITY;
 
 -- 6. POLICIES
 DROP POLICY IF EXISTS "Users view own profile" ON public.profiles;
@@ -92,17 +98,17 @@ CREATE POLICY "Public view floating icons" ON public.hero_floating_icons FOR SEL
 DROP POLICY IF EXISTS "Admin control floating icons" ON public.hero_floating_icons;
 CREATE POLICY "Admin control floating icons" ON public.hero_floating_icons FOR ALL USING (auth.jwt() ->> 'email' = 'hasibulgamepoint02@gmail.com');
 
+DROP POLICY IF EXISTS "Public view hero banners" ON public.hero_banners;
+CREATE POLICY "Public view hero banners" ON public.hero_banners FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Admin control hero banners" ON public.hero_banners;
+CREATE POLICY "Admin control hero banners" ON public.hero_banners FOR ALL USING (auth.jwt() ->> 'email' = 'hasibulgamepoint02@gmail.com');
+
 DROP POLICY IF EXISTS "Public view site settings" ON public.site_settings;
 CREATE POLICY "Public view site settings" ON public.site_settings FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS "Admin control site settings" ON public.site_settings;
 CREATE POLICY "Admin control site settings" ON public.site_settings FOR ALL USING (auth.jwt() ->> 'email' = 'hasibulgamepoint02@gmail.com');
-
-DROP POLICY IF EXISTS "Public view site config" ON public.site_config;
-CREATE POLICY "Public view site config" ON public.site_config FOR SELECT USING (true);
-
-DROP POLICY IF EXISTS "Admin control site config" ON public.site_config;
-CREATE POLICY "Admin control site config" ON public.site_config FOR ALL USING (auth.jwt() ->> 'email' = 'hasibulgamepoint02@gmail.com');
 
 DROP POLICY IF EXISTS "Users insert orders" ON public.orders;
 CREATE POLICY "Users insert orders" ON public.orders FOR INSERT WITH CHECK (true); -- Allow guest/logged-in order insertion

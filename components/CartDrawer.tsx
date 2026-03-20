@@ -9,14 +9,16 @@ interface CartDrawerProps {
 }
 
 const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
-  const { cart, removeFromCart, addOrder, user, clearCart } = useStore();
+  const { cart, removeFromCart, addOrder, user, clearCart, bdtRate } = useStore();
   const [isProcessing, setIsProcessing] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'ZiniPay' | 'bKash' | 'Nagad' | 'Rocket' | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<'ZiniPay' | 'bKash' | 'Nagad' | 'Binance' | null>(null);
   const [transactionId, setTransactionId] = useState('');
+  const [isCopied, setIsCopied] = useState(false);
   
   const total = cart.reduce((acc, item) => acc + item.price, 0);
+  const totalUsd = bdtRate > 0 ? total / bdtRate : 0;
 
   const handleCheckout = async () => {
     try {
@@ -123,12 +125,13 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
   const paymentNumbers = {
     bKash: "+8801878666388",
     Nagad: "+8801878666388",
-    Rocket: "+8801878666388"
+    Binance: "1056966023"
   };
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    alert("Number copied to clipboard!");
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
   };
 
   return (
@@ -214,7 +217,12 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                             <p className="text-[10px] font-mono text-red-600 truncate max-w-[150px]">ID: {item.playerId}</p>
                           </div>
                           <div className="text-right">
-                            <p className="font-bold text-sm mb-2 text-slate-900">৳{item.price.toFixed(0)}</p>
+                            <p className="font-bold text-sm mb-1 text-slate-900">৳{item.price.toFixed(0)}</p>
+                            {bdtRate > 0 && (
+                              <p className="text-[9px] font-bold text-slate-400 mb-2">
+                                ${(item.price / bdtRate).toFixed(2)} USDT
+                              </p>
+                            )}
                             <button 
                               onClick={() => removeFromCart(item.cartId)}
                               className="text-slate-300 hover:text-red-600 transition-colors"
@@ -248,7 +256,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
 
                     <div className="space-y-4">
                       <div className="grid grid-cols-2 gap-3">
-                        {(['ZiniPay', 'bKash', 'Nagad', 'Rocket'] as const).map((method) => (
+                        {(['ZiniPay', 'bKash', 'Nagad', 'Binance'] as const).map((method) => (
                           <button
                             key={method}
                             onClick={() => setPaymentMethod(method)}
@@ -270,17 +278,23 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                           className="bg-white p-4 rounded-2xl border border-black/10 space-y-3 shadow-sm"
                         >
                           <div className="flex justify-between items-center">
-                            <span className="text-xs text-slate-400 uppercase tracking-widest font-bold">Send Money to:</span>
+                            <span className="text-xs text-slate-400 uppercase tracking-widest font-bold">{paymentMethod === 'Binance' ? 'Binance ID:' : 'Send Money to:'}</span>
                             <div className="flex items-center gap-2">
                               <span className="text-sm font-mono text-slate-900 font-bold">{paymentNumbers[paymentMethod]}</span>
                               <button 
                                 onClick={() => copyToClipboard(paymentNumbers[paymentMethod])}
-                                className="p-1.5 bg-[#FAF9F6] hover:bg-[#F0F0F0] rounded-lg transition-colors text-red-600"
+                                className={`p-1.5 rounded-lg transition-colors ${isCopied ? 'bg-green-500/10 text-green-600' : 'bg-[#FAF9F6] hover:bg-[#F0F0F0] text-red-600'}`}
                                 title="Copy Number"
                               >
-                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                                </svg>
+                                {isCopied ? (
+                                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                ) : (
+                                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                                  </svg>
+                                )}
                               </button>
                             </div>
                           </div>
@@ -317,7 +331,12 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                 </div>
                 <div className="flex justify-between items-center text-lg">
                   <span className="font-display font-bold text-slate-900">Payable Total</span>
-                  <span className="font-display font-bold text-red-600 shadow-sm shadow-red-600/20">৳{total.toFixed(0)}</span>
+                  <div className="text-right">
+                    <span className="font-display font-bold text-red-600 shadow-sm shadow-red-600/20 block">৳{total.toFixed(0)}</span>
+                    {bdtRate > 0 && (
+                      <span className="text-[10px] text-slate-400 font-mono">≈ ${totalUsd.toFixed(2)} USDT</span>
+                    )}
+                  </div>
                 </div>
                 
                 {!showPayment ? (

@@ -118,7 +118,7 @@ const Shape = ({ type, size, left, top, delay, duration, rotationSpeed }: any) =
 const BackgroundAnimation: React.FC = () => {
   const shapes = useMemo(() => {
     const types = ['circle', 'square', 'triangle', 'cube', 'coin', 'diamond'];
-    return Array.from({ length: 20 }).map((_, i) => ({
+    return Array.from({ length: 12 }).map((_, i) => ({
       id: i,
       type: types[i % types.length],
       size: Math.random() * 30 + 15,

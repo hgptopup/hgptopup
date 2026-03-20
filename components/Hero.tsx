@@ -114,7 +114,13 @@ const Hero: React.FC = () => {
                   >
                     <div className="text-2xl md:text-3xl">
                       {icon.icon.startsWith('http') || icon.icon.startsWith('data:image/') ? (
-                        <img src={icon.icon} className="w-10 h-10 md:w-12 md:h-12 object-contain" alt="" referrerPolicy="no-referrer" />
+                        <img 
+                          src={icon.icon} 
+                          className="w-10 h-10 md:w-12 md:h-12 object-contain" 
+                          alt="" 
+                          referrerPolicy="no-referrer" 
+                          loading="lazy"
+                        />
                       ) : (
                         icon.icon
                       )}

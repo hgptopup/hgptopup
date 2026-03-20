@@ -26,6 +26,7 @@ interface AppState {
   heroBanners: HeroBanner[];
   floatingIcons: FloatingIcon[];
   logoUrl: string | null;
+  bdtRate: number;
   cart: CartItem[];
   loading: boolean;
   dbError: string | null;
@@ -58,6 +59,7 @@ interface AppState {
   deleteFloatingIcon: (id: string) => Promise<boolean>;
   
   fetchSiteSettings: () => Promise<void>;
+  updateBdtRate: (rate: number) => Promise<boolean>;
   updateLogo: (url: string) => Promise<boolean>;
   setLogoUrl: (url: string | null) => void;
   
@@ -78,6 +80,7 @@ export const useStore = create<AppState>((set, get) => ({
   heroBanners: [],
   floatingIcons: [],
   logoUrl: null,
+  bdtRate: 125,
   cart: [],
   loading: false,
   dbError: null,
@@ -156,16 +159,22 @@ export const useStore = create<AppState>((set, get) => ({
   fetchHeroBanners: async () => {
     try {
       const response = await fetch('/api/public/hero-banners');
-      if (!response.ok) throw new Error('Failed to fetch hero banners');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      }
       const data = await response.json();
       set({ heroBanners: data });
-    } catch (e) {
-      console.error("HGP FETCH ERROR (fetchHeroBanners):", e);
-      // Fallback
+    } catch (e: any) {
+      console.error("HGP FETCH ERROR (fetchHeroBanners):", e.message || e);
+      // Fallback to direct Supabase query
       try {
         const { data, error } = await supabase.from('hero_banners').select('*').order('created_at', { ascending: false });
         if (!error && data) set({ heroBanners: data });
-      } catch (err) {}
+        else if (error) console.error("HGP FALLBACK ERROR (fetchHeroBanners):", error.message);
+      } catch (err: any) {
+        console.error("HGP FALLBACK CRASH (fetchHeroBanners):", err.message || err);
+      }
     }
   },
 
@@ -215,16 +224,22 @@ export const useStore = create<AppState>((set, get) => ({
   fetchFloatingIcons: async () => {
     try {
       const response = await fetch('/api/public/floating-icons');
-      if (!response.ok) throw new Error('Failed to fetch floating icons');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      }
       const data = await response.json();
       set({ floatingIcons: data });
-    } catch (e) {
-      console.error("HGP FETCH ERROR (fetchFloatingIcons):", e);
-      // Fallback
+    } catch (e: any) {
+      console.error("HGP FETCH ERROR (fetchFloatingIcons):", e.message || e);
+      // Fallback to direct Supabase query
       try {
         const { data, error } = await supabase.from('hero_floating_icons').select('*').order('created_at', { ascending: false });
         if (!error && data) set({ floatingIcons: data });
-      } catch (err) {}
+        else if (error) console.error("HGP FALLBACK ERROR (fetchFloatingIcons):", error.message);
+      } catch (err: any) {
+        console.error("HGP FALLBACK CRASH (fetchFloatingIcons):", err.message || err);
+      }
     }
   },
 
@@ -264,15 +279,36 @@ export const useStore = create<AppState>((set, get) => ({
       const response = await fetch('/api/public/site-settings');
       if (!response.ok) throw new Error('Failed to fetch site settings');
       const data = await response.json();
-      if (data) set({ logoUrl: data.logo_url });
+      if (data) {
+        set({ 
+          logoUrl: data.logo_url,
+          bdtRate: Number(data.bdt_rate) || 125
+        });
+      }
     } catch (e) {
       console.error("HGP FETCH ERROR (fetchSiteSettings):", e);
       // Fallback
       try {
-        const { data, error } = await supabase.from('site_settings').select('logo_url').eq('id', 'main').maybeSingle();
-        if (!error && data) set({ logoUrl: data.logo_url });
-      } catch (err) {}
+        const { data: settings } = await supabase.from('site_settings').select('logo_url, bdt_rate').eq('id', 'main').maybeSingle();
+        
+        set({ 
+          logoUrl: settings?.logo_url || null,
+          bdtRate: Number(settings?.bdt_rate) || 125
+        });
+      } catch (err) {
+        console.error("HGP FALLBACK ERROR (fetchSiteSettings):", err);
+      }
     }
+  },
+  
+  updateBdtRate: async (rate) => {
+    const { error } = await supabase.from('site_settings').upsert({ id: 'main', bdt_rate: rate, updated_at: new Date().toISOString() });
+    if (!error) {
+      set({ bdtRate: rate });
+      return true;
+    }
+    console.error("HGP DB ERROR (updateBdtRate):", error);
+    return false;
   },
   
   updateLogo: async (url) => {
@@ -360,7 +396,8 @@ export const useStore = create<AppState>((set, get) => ({
         status: o.status,
         createdAt: o.created_at,
         transactionId: o.transaction_id || 'N/A',
-        paymentMethod: o.payment_method || 'N/A'
+        paymentMethod: o.payment_method || 'N/A',
+        screenshot: o.screenshot
       }))});
     }
   },
@@ -384,7 +421,8 @@ export const useStore = create<AppState>((set, get) => ({
           status: o.status,
           createdAt: o.created_at,
           transactionId: o.transaction_id || 'N/A',
-          paymentMethod: o.payment_method || 'N/A'
+          paymentMethod: o.payment_method || 'N/A',
+          screenshot: o.screenshot
         }))});
       }
     } catch (e) {
@@ -471,7 +509,8 @@ export const useStore = create<AppState>((set, get) => ({
               y += 10;
               doc.setFontSize(11);
               doc.setFont('helvetica', 'normal');
-              doc.text(`Total Amount: ${order.totalAmount} BDT`, 20, y);
+              const currency = order.paymentMethod?.includes('USDT') ? 'USDT' : 'BDT';
+              doc.text(`Total Amount: ${order.totalAmount} ${currency}`, 20, y);
               doc.text(`Payment Method: ${order.paymentMethod}`, 20, y + 8);
               doc.text(`Transaction ID: ${order.transactionId}`, 20, y + 16);
               
@@ -516,7 +555,8 @@ export const useStore = create<AppState>((set, get) => ({
       total_amount: order.totalAmount,
       status: order.status,
       transaction_id: order.transactionId,
-      payment_method: order.paymentMethod
+      payment_method: order.paymentMethod,
+      screenshot: order.screenshot
     }]);
 
     if (dbError) {
@@ -593,7 +633,8 @@ export const useStore = create<AppState>((set, get) => ({
       y += 10;
       doc.setFontSize(11);
       doc.setFont('helvetica', 'normal');
-      doc.text(`Total Amount: ${order.totalAmount} BDT`, 20, y);
+      const currency = order.paymentMethod?.includes('USDT') ? 'USDT' : 'BDT';
+      doc.text(`Total Amount: ${order.totalAmount} ${currency}`, 20, y);
       doc.text(`Payment Method: ${order.paymentMethod}`, 20, y + 8);
       doc.text(`Transaction ID: ${order.transactionId}`, 20, y + 16);
       

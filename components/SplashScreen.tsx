@@ -26,7 +26,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ message, onBack }) => {
 
       {/* Unique Vibe: Floating Particles */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(20)].map((_, i) => (
+        {[...Array(10)].map((_, i) => (
           <motion.div
             key={i}
             initial={{ 
@@ -62,7 +62,12 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ message, onBack }) => {
           className="mb-8"
         >
           <div className="w-24 h-24 flex items-center justify-center relative group">
-            <img src={logoUrl || "https://i.imgur.com/VjpTmnL.png"} alt="Hasibul Game Point Logo" className="w-full h-full object-cover rounded-full border-4 border-red-600/30" />
+            <img 
+              src={logoUrl || "https://i.imgur.com/VjpTmnL.png"} 
+              alt="Hasibul Game Point Logo" 
+              className="w-full h-full object-cover rounded-full border-4 border-red-600/30" 
+              loading="lazy"
+            />
             <div className="absolute inset-0 rounded-3xl border-2 border-red-600/20 animate-ping opacity-20" />
           </div>
         </motion.div>
