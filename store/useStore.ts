@@ -665,11 +665,11 @@ export const useStore = create<AppState>((set, get) => ({
     
     // Await notifications so they don't get cancelled by page navigation (e.g., ZiniPay redirect)
     if (order.paymentMethod?.includes('ZiniPay')) {
-      // For ZiniPay, we want a fast redirect. We'll wait at most 500ms for notifications.
+      // For ZiniPay, we want an instant redirect. We'll wait at most 50ms for notifications.
       // The webhook will also send a notification when the payment is verified.
       await Promise.race([
         Promise.allSettled([telegramPromise, adminEmailPromise]),
-        new Promise(resolve => setTimeout(resolve, 500))
+        new Promise(resolve => setTimeout(resolve, 50))
       ]);
     } else {
       await Promise.allSettled([telegramPromise, adminEmailPromise]);

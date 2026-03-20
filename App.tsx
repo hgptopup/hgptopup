@@ -50,6 +50,7 @@ const Home: React.FC<{
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
     >
       <Hero />
       <section id="games" className="max-w-[1600px] mx-auto px-6 pb-32 relative z-10">
@@ -83,7 +84,7 @@ const Home: React.FC<{
                 initial={{ opacity: 0, scale: 0.95 }}
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
-                transition={{ delay: idx * 0.05 }}
+                transition={{ delay: idx * 0.02, duration: 0.2 }}
               >
                 <GameCard 
                   game={game} 
@@ -559,6 +560,7 @@ const GameDetailWrapper: React.FC<{
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -20 }}
+      transition={{ duration: 0.2 }}
     >
       <GameDetail 
         game={game} 

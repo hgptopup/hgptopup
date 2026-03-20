@@ -77,28 +77,28 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ message, onBack }) => {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.1 }}
+            transition={{ delay: 0.05 }}
             className="flex flex-col items-center"
           >
             <motion.h1 
-              initial={{ y: 40, opacity: 0 }}
+              initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ 
-                duration: 0.2, 
+                duration: 0.15, 
                 ease: [0.16, 1, 0.3, 1],
-                delay: 0.1
+                delay: 0.05
               }}
               className="text-2xl md:text-4xl font-display font-black text-slate-900 uppercase tracking-[0.2em] italic leading-none"
             >
               Hasibul
             </motion.h1>
             <motion.h1 
-              initial={{ y: 40, opacity: 0 }}
+              initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ 
-                duration: 0.2, 
+                duration: 0.15, 
                 ease: [0.16, 1, 0.3, 1],
-                delay: 0.15
+                delay: 0.1
               }}
               className="text-3xl md:text-5xl font-display font-black text-red-600 uppercase tracking-[0.15em] italic mt-1"
             >
@@ -111,7 +111,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ message, onBack }) => {
         <motion.div 
           initial={{ top: "-10%" }}
           animate={{ top: "110%" }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          transition={{ duration: 0.6, repeat: Infinity, ease: "linear" }}
           className="absolute left-0 right-0 h-[1px] bg-red-600/10 z-10 pointer-events-none shadow-[0_0_10px_rgba(220,38,38,0.1)]"
         />
 
@@ -119,13 +119,13 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ message, onBack }) => {
         <motion.div 
           initial={{ opacity: 0, width: 0 }}
           animate={{ opacity: 1, width: "100%" }}
-          transition={{ duration: 0.2, delay: 0.2, ease: "easeInOut" }}
+          transition={{ duration: 0.15, delay: 0.1, ease: "easeInOut" }}
           className="mt-6 h-[2px] bg-[#FAF9F6] relative overflow-hidden max-w-[200px]"
         >
           <motion.div 
             initial={{ x: "-100%" }}
             animate={{ x: "100%" }}
-            transition={{ duration: 0.5, repeat: Infinity, ease: "linear" }}
+            transition={{ duration: 0.4, repeat: Infinity, ease: "linear" }}
             className="absolute inset-0 bg-red-600 shadow-[0_0_15px_rgba(220,38,38,0.4)]"
           />
         </motion.div>
@@ -133,9 +133,9 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ message, onBack }) => {
         {message && (
           <div className="flex flex-col items-center">
             <motion.p
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.25 }}
+              transition={{ delay: 0.15 }}
               className="mt-4 text-sm font-medium text-slate-500 tracking-widest uppercase"
             >
               {message}
