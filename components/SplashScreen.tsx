@@ -13,7 +13,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ message, onBack }) => {
     <motion.div 
       initial={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.3, ease: "easeInOut" }}
+      transition={{ duration: 0.15, ease: "easeInOut" }}
       className="fixed inset-0 z-[9999] bg-[#FAF9F6] flex items-center justify-center overflow-hidden"
     >
       {/* Background Glow */}
