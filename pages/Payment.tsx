@@ -44,10 +44,6 @@ const Payment: React.FC = () => {
           <div className="space-y-6">
             <div className="bg-white p-8 rounded-[2.5rem] border border-black/5 shadow-xl">
               <h3 className="text-xl font-display font-bold mb-6 text-slate-900">Manual Payment</h3>
-              <div className="mb-6 p-4 bg-red-600/5 rounded-2xl border border-red-600/10">
-                <p className="text-[10px] font-bold text-red-600 uppercase tracking-widest mb-1">Current Exchange Rate</p>
-                <p className="text-lg font-display font-bold text-slate-900">1 USD/USDT = {bdtRate || 125} BDT</p>
-              </div>
               <p className="text-slate-500 text-sm mb-8 leading-relaxed">
                 If you prefer manual payment, please send the total amount to any of the numbers below. After payment, enter the Transaction ID in your cart during checkout.
               </p>
