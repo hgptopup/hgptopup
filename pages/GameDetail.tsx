@@ -467,16 +467,21 @@ const GameDetail: React.FC<GameDetailProps> = ({ game, onBack, onOpenAuth }) => 
                             setSelectedPaymentType('BDT');
                             handleSubmitOrder('BDT');
                           }}
-                          className="p-6 bg-white border border-black/5 rounded-2xl flex flex-col items-center gap-3 hover:border-red-600/30 transition-all group shadow-sm"
+                          disabled={isProcessingOrder}
+                          className="p-6 bg-white border border-black/5 rounded-2xl flex flex-col items-center gap-3 hover:border-red-600/30 transition-all group shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <div className="w-12 h-12 bg-red-600/10 rounded-xl flex items-center justify-center text-red-600 group-hover:scale-110 transition-transform">
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                            </svg>
+                            {isProcessingOrder && selectedPaymentType === 'BDT' ? (
+                              <div className="w-6 h-6 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                              </svg>
+                            )}
                           </div>
                           <div className="text-center">
-                            <div className="font-bold text-slate-900">BDT Payment</div>
-                            <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">ZiniPay Method</div>
+                            <div className="font-bold text-slate-900">Bkash/Nagad</div>
+                            <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Auto Payment</div>
                           </div>
                         </motion.button>
 

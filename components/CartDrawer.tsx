@@ -266,7 +266,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                                 : 'bg-[#FAF9F6] border-black/10 text-slate-500 hover:border-black/20'
                             }`}
                           >
-                            {method === 'ZiniPay' ? 'Auto Payment' : method}
+                            {method === 'ZiniPay' ? 'Bkash/Nagad (Auto)' : method}
                           </button>
                         ))}
                       </div>

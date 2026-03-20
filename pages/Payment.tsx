@@ -78,7 +78,7 @@ const Payment: React.FC = () => {
             <div className="bg-red-600 p-8 rounded-[2.5rem] text-[#FAF9F6] shadow-xl shadow-red-600/20">
               <h3 className="text-xl font-display font-bold mb-4">Automatic Payment</h3>
               <p className="text-red-100 text-sm mb-6 leading-relaxed">
-                We also support automatic payments via ZiniPay. Simply select "Auto Payment" in your cart to pay instantly using your preferred method.
+                We also support automatic payments via Bkash/Nagad. Simply select "Bkash/Nagad (Auto)" in your cart to pay instantly using your preferred method.
               </p>
               <button 
                 onClick={() => {
