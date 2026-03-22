@@ -324,7 +324,21 @@ export const useStore = create<AppState>((set, get) => ({
 
   fetchAllUsers: async ( ) => {
     try {
-      const { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+      let { data, error } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+      
+      if (error && error.code === 'PGRST303') {
+        console.log("HGP DEBUG: JWT expired, attempting to refresh session...");
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError || !sessionData.session) {
+          console.error("HGP DEBUG: Failed to refresh session, logging out.");
+          get().logout();
+          return;
+        }
+        const retry = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+        data = retry.data;
+        error = retry.error;
+      }
+
       if (error) {
         console.error("HGP DB ERROR (fetchAllUsers):", error);
         return;
@@ -367,7 +381,22 @@ export const useStore = create<AppState>((set, get) => ({
   fetchOrders: async () => {
     const { user, orders: currentOrders } = get();
     if (!user) return;
-    const { data } = await supabase.from('orders').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
+    
+    let { data, error } = await supabase.from('orders').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
+    
+    if (error && error.code === 'PGRST303') {
+      console.log("HGP DEBUG: JWT expired, attempting to refresh session...");
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !sessionData.session) {
+        console.error("HGP DEBUG: Failed to refresh session, logging out.");
+        get().logout();
+        return;
+      }
+      const retry = await supabase.from('orders').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
+      data = retry.data;
+      error = retry.error;
+    }
+
     if (data) {
       let newlyCompleted = false;
       if (currentOrders.length > 0) {
@@ -405,7 +434,21 @@ export const useStore = create<AppState>((set, get) => ({
   fetchAllOrders: async () => {
     if (!get().isAdmin) return;
     try {
-      const { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+      let { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+      
+      if (error && error.code === 'PGRST303') {
+        console.log("HGP DEBUG: JWT expired, attempting to refresh session...");
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError || !sessionData.session) {
+          console.error("HGP DEBUG: Failed to refresh session, logging out.");
+          get().logout();
+          return;
+        }
+        const retry = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+        data = retry.data;
+        error = retry.error;
+      }
+
       if (error) {
         console.error("HGP DB ERROR (fetchAllOrders):", error);
         return;
@@ -431,7 +474,20 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   updateOrderStatus: async (orderId, status) => {
-    const { error } = await supabase.from('orders').update({ status }).eq('id', orderId);
+    let { error } = await supabase.from('orders').update({ status }).eq('id', orderId);
+    
+    if (error && error.code === 'PGRST303') {
+      console.log("HGP DEBUG: JWT expired, attempting to refresh session...");
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !sessionData.session) {
+        console.error("HGP DEBUG: Failed to refresh session, logging out.");
+        get().logout();
+        return false;
+      }
+      const retry = await supabase.from('orders').update({ status }).eq('id', orderId);
+      error = retry.error;
+    }
+
     if (!error) {
       // If status is COMPLETED, PROCESSING or CANCELLED, send email to user
       if (status === 'COMPLETED' || status === 'PROCESSING' || status === 'CANCELLED') {
@@ -547,7 +603,7 @@ export const useStore = create<AppState>((set, get) => ({
     console.log("HGP DEBUG: Saving order to Supabase...", order.id);
     
     // Insert into DB
-    const { error: dbError } = await supabase.from('orders').insert([{
+    let { error: dbError } = await supabase.from('orders').insert([{
       id: order.id,
       user_id: user.id,
       customer_name: order.customerName,
@@ -558,6 +614,28 @@ export const useStore = create<AppState>((set, get) => ({
       payment_method: order.paymentMethod,
       screenshot: order.screenshot
     }]);
+
+    if (dbError && dbError.code === 'PGRST303') {
+      console.log("HGP DEBUG: JWT expired, attempting to refresh session...");
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !sessionData.session) {
+        console.error("HGP DEBUG: Failed to refresh session, logging out.");
+        get().logout();
+        return false;
+      }
+      const retry = await supabase.from('orders').insert([{
+        id: order.id,
+        user_id: user.id,
+        customer_name: order.customerName,
+        items: order.items,
+        total_amount: order.totalAmount,
+        status: order.status,
+        transaction_id: order.transactionId,
+        payment_method: order.paymentMethod,
+        screenshot: order.screenshot
+      }]);
+      dbError = retry.error;
+    }
 
     if (dbError) {
       console.error("HGP DB ERROR:", dbError);

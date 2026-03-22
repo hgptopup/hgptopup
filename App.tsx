@@ -154,10 +154,10 @@ const AppContent: React.FC = () => {
     window.addEventListener('unhandledrejection', handleUnhandledRejection);
 
     const initApp = async () => {
-      // Force hide loading screen after 300ms to make it feel extremely fast
+      // Force hide loading screen after 800ms to make it feel extremely fast
       const loadingTimer = setTimeout(() => {
         setIsInitialLoading(false);
-      }, 300);
+      }, 800);
 
       try {
         // Fetch session and public data in parallel for maximum speed
