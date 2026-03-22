@@ -17,6 +17,8 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
   const [transactionId, setTransactionId] = useState('');
   const [isCopied, setIsCopied] = useState(false);
   
+  const [isRedirecting, setIsRedirecting] = useState(false);
+  
   const total = cart.reduce((acc, item) => acc + item.price, 0);
   const totalUsd = bdtRate > 0 ? total / bdtRate : 0;
 
@@ -53,54 +55,64 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
       console.log("HGP DEBUG: Initiating checkout for order:", orderId);
       
       if (paymentMethod === 'ZiniPay') {
-        const redirectUrl = `${window.location.origin}/payment/success?orderId=${orderId}`;
-        const cancelUrl = `${window.location.origin}/payment/cancel?orderId=${orderId}`;
-        
-        const response = await fetch('/api/payment/create', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            amount: total,
-            redirect_url: redirectUrl,
-            cancel_url: cancelUrl,
-            webhook_url: `${window.location.origin}/api/payment/webhook`,
-            cus_email: user.email || 'guest@example.com',
-            cus_name: user.name || 'Guest',
-            metadata: { orderId }
-          })
-        });
-        
-        const data = await response.json();
-        
-        if (data.status && data.payment_url) {
-          // Use the invoiceId from ZiniPay if available, otherwise fallback to orderId
-          (orderData as any).transactionId = data.invoiceId || data.payment_id || orderId;
+        try {
+          setIsRedirecting(true);
+          const redirectUrl = `${window.location.origin}/payment/success?orderId=${orderId}`;
+          const cancelUrl = `${window.location.origin}/payment/cancel?orderId=${orderId}`;
           
-          // Save order to DB before redirecting
-          const success = await addOrder(orderData);
-          if (!success) {
-            alert("Failed to save order. Please try again.");
+          const response = await fetch('/api/payment/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              amount: total,
+              redirect_url: redirectUrl,
+              cancel_url: cancelUrl,
+              webhook_url: `${window.location.origin}/api/payment/webhook`,
+              cus_email: user.email || 'guest@example.com',
+              cus_name: user.name || 'Guest',
+              metadata: { orderId }
+            })
+          });
+          
+          const data = await response.json();
+          
+          if (data.status && data.payment_url) {
+            // Use the invoiceId from ZiniPay if available, otherwise fallback to orderId
+            (orderData as any).transactionId = data.invoiceId || data.payment_id || orderId;
+            
+            // Save order to DB before redirecting
+            // We use optimistic addOrder here too
+            await addOrder(orderData);
+            
+            sessionStorage.setItem('hgp_return_state', JSON.stringify({
+              isCartOpen: true
+            }));
+            
+            // Redirect immediately
+            window.location.href = data.payment_url;
+            return;
+          } else {
+            setIsRedirecting(false);
+            console.error("ZiniPay Error Data:", data);
+            alert("Failed to initialize payment gateway: " + (data.error || data.message || JSON.stringify(data)));
             setIsProcessing(false);
             return;
           }
-          sessionStorage.setItem('hgp_return_state', JSON.stringify({
-            isCartOpen: true
-          }));
-          window.location.href = data.payment_url;
-          return;
-        } else {
-          console.error("ZiniPay Error Data:", data);
-          alert("Failed to initialize payment gateway: " + (data.error || data.message || JSON.stringify(data)));
+        } catch (err: any) {
+          setIsRedirecting(false);
+          console.error("ZiniPay initialization failed:", err);
+          alert("Payment gateway error. Please try again.");
           setIsProcessing(false);
           return;
         }
       }
 
+      // For manual payments (USDT, etc.)
       const success = await addOrder(orderData);
       
       if (success) {
         setShowSuccess(true);
-        clearCart();
+        // clearCart is already called inside addOrder optimistically
       } else {
         alert("Failed to place order. Please check your connection and try again.");
       }
@@ -108,6 +120,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
       console.error("HGP Checkout Error:", error);
       alert("Checkout Error: " + (error.message || "Unknown error occurred"));
     } finally {
+      // Only reset processing if we're not redirecting
       if (paymentMethod !== 'ZiniPay') {
         setIsProcessing(false);
       }
@@ -356,10 +369,13 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                     className={`w-full py-4 rounded-2xl font-bold transition-all flex items-center justify-center space-x-2 ${isProcessing ? 'bg-[#F0F0F0] text-slate-400 cursor-not-allowed border border-black/5' : 'bg-red-600 hover:bg-red-700 text-[#FAF9F6] shadow-xl shadow-red-600/20'}`}
                   >
                     {isProcessing ? (
-                      <svg className="animate-spin h-5 w-5 text-slate-400" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
+                      <div className="flex items-center gap-2">
+                        <svg className="animate-spin h-5 w-5 text-slate-400" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span>{isRedirecting ? 'Redirecting...' : 'Processing...'}</span>
+                      </div>
                     ) : (
                       <>
                         <span>Pay Now</span>

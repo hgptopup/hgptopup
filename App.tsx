@@ -213,30 +213,6 @@ const AppContent: React.FC = () => {
   }, [setSession]);
 
   useEffect(() => {
-    if (!isAuthenticated || !user) return;
-
-    const channel = supabase
-      .channel('orders-channel')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'orders',
-          filter: `user_id=eq.${user.id}`,
-        },
-        (payload) => {
-          fetchOrders();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [isAuthenticated, user, fetchOrders]);
-
-  useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const pathname = window.location.pathname;
     let paymentStatus = urlParams.get('payment') || (pathname.includes('/payment/success') ? 'success' : pathname.includes('/payment/cancel') ? 'cancel' : null);

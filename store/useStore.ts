@@ -30,6 +30,8 @@ interface AppState {
   cart: CartItem[];
   loading: boolean;
   dbError: string | null;
+  userOrdersChannel: any | null;
+  adminUpdatesChannel: any | null;
   
   setSession: (sessionUser: any) => Promise<void>;
   logout: () => Promise<void>;
@@ -84,6 +86,8 @@ export const useStore = create<AppState>((set, get) => ({
   cart: [],
   loading: false,
   dbError: null,
+  userOrdersChannel: null,
+  adminUpdatesChannel: null,
   justCompletedOrder: false,
   setJustCompletedOrder: (val) => set({ justCompletedOrder: val }),
 
@@ -129,44 +133,141 @@ export const useStore = create<AppState>((set, get) => ({
     await Promise.all(promises);
 
     // Real-time subscriptions for user orders
-    supabase
+    // Clean up existing subscriptions first
+    const currentState = get();
+    if (currentState.userOrdersChannel) {
+      supabase.removeChannel(currentState.userOrdersChannel);
+    }
+    if (currentState.adminUpdatesChannel) {
+      supabase.removeChannel(currentState.adminUpdatesChannel);
+    }
+
+    const userOrdersChannel = supabase
       .channel(`user-orders-${sessionUser.id}`)
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
         table: 'orders',
         filter: `user_id=eq.${sessionUser.id}`
-      }, () => {
-        get().fetchOrders();
+      }, (payload) => {
+        const newId = (payload.new as any)?.id || (payload.old as any)?.id;
+        console.log("HGP DEBUG: User orders changed via real-time:", payload.eventType, newId);
+        if (payload.eventType === 'INSERT') {
+          const newOrder = payload.new;
+          const mappedOrder = {
+            id: newOrder.id,
+            userId: newOrder.user_id,
+            customerName: newOrder.customer_name,
+            items: newOrder.items,
+            totalAmount: Number(newOrder.total_amount),
+            status: newOrder.status,
+            createdAt: newOrder.created_at,
+            transactionId: newOrder.transaction_id || 'N/A',
+            paymentMethod: newOrder.payment_method || 'N/A',
+            screenshot: newOrder.screenshot
+          };
+          set((state) => {
+            // Avoid duplicates if optimistic update already added it
+            const exists = state.orders.some(o => o.id === mappedOrder.id);
+            if (exists) return state;
+            return { orders: [mappedOrder, ...state.orders] };
+          });
+        } else if (payload.eventType === 'UPDATE') {
+          const updatedOrder = payload.new;
+          set((state) => ({
+            orders: state.orders.map(o => o.id === updatedOrder.id ? {
+              ...o,
+              status: updatedOrder.status,
+              transactionId: updatedOrder.transaction_id || o.transactionId
+            } : o)
+          }));
+        } else {
+          get().fetchOrders();
+        }
       })
-      .subscribe();
+      .subscribe((status) => {
+        console.log(`HGP DEBUG: User orders subscription status for ${sessionUser.id}:`, status);
+      });
 
+    let adminUpdatesChannel = null;
     if (isAdmin) {
       // Real-time subscriptions for admin
-      supabase
+      adminUpdatesChannel = supabase
         .channel('admin-updates')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+          console.log("HGP DEBUG: Profiles changed, refreshing users...");
           get().fetchAllUsers();
         })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
-          get().fetchAllOrders();
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, (payload) => {
+          console.log("HGP DEBUG: New order for admin via real-time:", payload.new.id);
+          const newOrder = payload.new;
+          const mappedOrder = {
+            id: newOrder.id,
+            userId: newOrder.user_id,
+            customerName: newOrder.customer_name,
+            items: newOrder.items,
+            totalAmount: Number(newOrder.total_amount),
+            status: newOrder.status,
+            createdAt: newOrder.created_at,
+            transactionId: newOrder.transaction_id || 'N/A',
+            paymentMethod: newOrder.payment_method || 'N/A',
+            screenshot: newOrder.screenshot
+          };
+          set((state) => {
+            const exists = state.allOrders.some(o => o.id === mappedOrder.id);
+            if (exists) return state;
+            return { allOrders: [mappedOrder, ...state.allOrders] };
+          });
         })
-        .subscribe();
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, (payload) => {
+          console.log("HGP DEBUG: Order updated for admin via real-time:", payload.new.id);
+          const updatedOrder = payload.new;
+          set((state) => ({
+            allOrders: state.allOrders.map(o => o.id === updatedOrder.id ? {
+              ...o,
+              status: updatedOrder.status,
+              transactionId: updatedOrder.transaction_id || o.transactionId,
+              paymentMethod: updatedOrder.payment_method || o.paymentMethod,
+              customerName: updatedOrder.customer_name || o.customerName
+            } : o)
+          }));
+        })
+        .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'orders' }, (payload) => {
+          console.log("HGP DEBUG: Order deleted for admin via real-time:", payload.old.id);
+          set((state) => ({
+            allOrders: state.allOrders.filter(o => o.id !== payload.old.id)
+          }));
+        })
+        .subscribe((status) => {
+          console.log("HGP DEBUG: Admin updates subscription status:", status);
+        });
     }
+
+    set({ userOrdersChannel, adminUpdatesChannel });
   },
   
   logout: async () => {
     try {
-      const { user } = get();
-      if (user) {
-        supabase.channel(`user-orders-${user.id}`).unsubscribe();
-      }
-      supabase.channel('admin-updates').unsubscribe();
+      const { user, userOrdersChannel, adminUpdatesChannel } = get();
+      if (userOrdersChannel) supabase.removeChannel(userOrdersChannel);
+      if (adminUpdatesChannel) supabase.removeChannel(adminUpdatesChannel);
+      
       await supabase.auth.signOut();
     } catch (e) {
       console.warn("Sign out error:", e);
     }
-    set({ user: null, isAuthenticated: false, isAdmin: false, orders: [], allOrders: [], allUsers: [], cart: [], justCompletedOrder: false });
+    set({ 
+      user: null, 
+      isAuthenticated: false, 
+      isAdmin: false, 
+      orders: [], 
+      allOrders: [], 
+      allUsers: [], 
+      cart: [], 
+      justCompletedOrder: false,
+      userOrdersChannel: null,
+      adminUpdatesChannel: null
+    });
   },
 
   fetchGames: async () => {
@@ -649,159 +750,163 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   addOrder: async (order) => {
-    const { user } = get();
+    const { user, orders, allOrders, isAdmin: userIsAdmin } = get();
     if (!user) {
       console.error("HGP ERROR: No user found in store during addOrder");
       return false;
     }
 
-    // Optimistic update for immediate feedback
-    const { orders, allOrders, isAdmin: userIsAdmin } = get();
     const newOrder = {
       ...order,
       userId: user.id,
       totalAmount: Number(order.totalAmount),
       createdAt: order.createdAt || new Date().toISOString(),
       transactionId: order.transactionId || 'PENDING',
-      paymentMethod: order.paymentMethod || 'N/A'
+      paymentMethod: order.paymentMethod || 'N/A',
+      status: order.status || 'PENDING'
     };
-    
+
+    // OPTIMISTIC UPDATE: Update UI immediately
     set({ 
       orders: [newOrder, ...orders],
-      allOrders: userIsAdmin ? [newOrder, ...allOrders] : allOrders
+      allOrders: userIsAdmin ? [newOrder, ...allOrders] : allOrders,
+      justCompletedOrder: true
     });
 
-    // Clear cart and return immediately for a fast UI experience
+    // Clear cart immediately for a fast UI experience
     get().clearCart();
 
     // Perform DB operations and notifications in the background
     (async () => {
-      console.log("HGP DEBUG: Saving order to Supabase...", order.id);
+      console.log("HGP DEBUG: Saving order to Supabase in background...", order.id);
       
-      // Insert into DB
-      let { error: dbError } = await supabase.from('orders').insert([{
-        id: order.id,
-        user_id: user.id,
-        customer_name: order.customerName,
-        items: order.items,
-        total_amount: order.totalAmount,
-        status: order.status,
-        transaction_id: order.transactionId,
-        payment_method: order.paymentMethod,
-        screenshot: order.screenshot
-      }]);
+      try {
+        // Insert into DB
+        let { error: dbError } = await supabase.from('orders').insert([{
+          id: order.id,
+          user_id: user.id,
+          customer_name: order.customerName,
+          items: order.items,
+          total_amount: order.totalAmount,
+          status: order.status,
+          transaction_id: order.transactionId,
+          payment_method: order.paymentMethod,
+          screenshot: order.screenshot
+        }]);
 
-      if (dbError && dbError.code === 'PGRST303') {
-        const { data: sessionData } = await supabase.auth.getSession();
-        if (sessionData.session) {
-          const retry = await supabase.from('orders').insert([{
-            id: order.id,
-            user_id: user.id,
-            customer_name: order.customerName,
-            items: order.items,
-            total_amount: order.totalAmount,
-            status: order.status,
-            transaction_id: order.transactionId,
-            payment_method: order.paymentMethod,
-            screenshot: order.screenshot
-          }]);
-          dbError = retry.error;
+        if (dbError && dbError.code === 'PGRST303') {
+          const { data: sessionData } = await supabase.auth.getSession();
+          if (sessionData.session) {
+            const retry = await supabase.from('orders').insert([{
+              id: order.id,
+              user_id: user.id,
+              customer_name: order.customerName,
+              items: order.items,
+              total_amount: order.totalAmount,
+              status: order.status,
+              transaction_id: order.transactionId,
+              payment_method: order.paymentMethod,
+              screenshot: order.screenshot
+            }]);
+            dbError = retry.error;
+          }
         }
-      }
 
-      if (dbError) {
-        console.error("HGP DB ERROR:", dbError);
-        // We could potentially rollback the optimistic update here if needed
-        return;
-      }
+        if (dbError) {
+          console.error("HGP DB ERROR in background:", dbError);
+          return;
+        }
 
-      // Generate PDF Receipt and Send Notifications asynchronously
-      const isZiniPay = order.paymentMethod?.includes('ZiniPay');
-      let pdfDataUri = '';
-      
-      if (!isZiniPay) {
-        try {
-          const doc = new jsPDF();
-          // Header Blue Bar
-          doc.setFillColor(15, 33, 71); // Dark Blue
-          doc.rect(0, 0, 210, 25, 'F');
-          // Header Text
-          doc.setFontSize(24);
-          doc.setTextColor(255, 255, 255); // White
-          doc.setFont('helvetica', 'bold');
-          doc.text('Hasibul Game Point', 105, 17, { align: 'center' });
-          // INVOICE Title
-          doc.setFontSize(20);
-          doc.setTextColor(0, 0, 0);
-          doc.text('INVOICE', 105, 45, { align: 'center' });
-          // Order Information Section
-          doc.setFontSize(14);
-          doc.setFont('helvetica', 'bold');
-          doc.text('Order Information', 20, 60);
-          doc.setFontSize(11);
-          doc.setFont('helvetica', 'normal');
-          doc.text(`Order ID: ${order.id}`, 20, 70);
-          doc.text(`Date: ${new Date().toLocaleString()}`, 20, 78);
-          doc.text(`Customer: ${order.customerName || user.name}`, 20, 86);
-          doc.text(`Email: ${user.email}`, 20, 94);
-          // Order Items Section
-          doc.setFontSize(14);
-          doc.setFont('helvetica', 'bold');
-          doc.text('Order Items', 20, 110);
-          // Table Header
-          doc.setFillColor(245, 245, 245);
-          doc.rect(20, 118, 170, 10, 'F');
-          doc.rect(20, 118, 170, 10, 'S');
-          doc.line(140, 118, 140, 128); // Column separator
-          doc.setFontSize(11);
-          doc.text('Item Description', 22, 125);
-          doc.text('Target ID', 142, 125);
-          // Table Body
-          let y = 128;
-          order.items.forEach((item) => {
-            doc.rect(20, y, 170, 10, 'S');
-            doc.line(140, y, 140, y + 10);
+        // Generate PDF Receipt and Send Notifications asynchronously
+        const isZiniPay = order.paymentMethod?.includes('ZiniPay');
+        let pdfDataUri = '';
+        
+        if (!isZiniPay) {
+          try {
+            const doc = new jsPDF();
+            // Header Blue Bar
+            doc.setFillColor(15, 33, 71); // Dark Blue
+            doc.rect(0, 0, 210, 25, 'F');
+            // Header Text
+            doc.setFontSize(24);
+            doc.setTextColor(255, 255, 255); // White
+            doc.setFont('helvetica', 'bold');
+            doc.text('Hasibul Game Point', 105, 17, { align: 'center' });
+            // INVOICE Title
+            doc.setFontSize(20);
+            doc.setTextColor(0, 0, 0);
+            doc.text('INVOICE', 105, 45, { align: 'center' });
+            // Order Information Section
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Order Information', 20, 60);
+            doc.setFontSize(11);
             doc.setFont('helvetica', 'normal');
-            doc.text(`${item.gameTitle} - ${item.packageName}`, 22, y + 7);
-            doc.text(`${item.playerId}`, 142, y + 7);
+            doc.text(`Order ID: ${order.id}`, 20, 70);
+            doc.text(`Date: ${new Date().toLocaleString()}`, 20, 78);
+            doc.text(`Customer: ${order.customerName || user.name}`, 20, 86);
+            doc.text(`Email: ${user.email}`, 20, 94);
+            // Order Items Section
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Order Items', 20, 110);
+            // Table Header
+            doc.setFillColor(245, 245, 245);
+            doc.rect(20, 118, 170, 10, 'F');
+            doc.rect(20, 118, 170, 10, 'S');
+            doc.line(140, 118, 140, 128); // Column separator
+            doc.setFontSize(11);
+            doc.text('Item Description', 22, 125);
+            doc.text('Target ID', 142, 125);
+            // Table Body
+            let y = 128;
+            order.items.forEach((item) => {
+              doc.rect(20, y, 170, 10, 'S');
+              doc.line(140, y, 140, y + 10);
+              doc.setFont('helvetica', 'normal');
+              doc.text(`${item.gameTitle} - ${item.packageName}`, 22, y + 7);
+              doc.text(`${item.playerId}`, 142, y + 7);
+              y += 10;
+            });
+            // Payment Summary Section
+            y += 15;
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Payment Summary', 20, y);
             y += 10;
-          });
-          // Payment Summary Section
-          y += 15;
-          doc.setFontSize(14);
-          doc.setFont('helvetica', 'bold');
-          doc.text('Payment Summary', 20, y);
-          y += 10;
-          doc.setFontSize(11);
-          doc.setFont('helvetica', 'normal');
-          const currency = order.paymentMethod?.includes('USDT') ? 'USDT' : 'BDT';
-          doc.text(`Total Amount: ${order.totalAmount} ${currency}`, 20, y);
-          doc.text(`Payment Method: ${order.paymentMethod}`, 20, y + 8);
-          doc.text(`Transaction ID: ${order.transactionId}`, 20, y + 16);
-          // Footer
-          doc.setFontSize(10);
-          doc.setTextColor(100, 100, 100);
-          doc.text('Thank you for choosing HGP', 105, 280, { align: 'center' });
-          pdfDataUri = doc.output('datauristring');
-        } catch (pdfErr: any) {
-          console.error("HGP PDF ERROR:", pdfErr);
+            doc.setFontSize(11);
+            doc.setFont('helvetica', 'normal');
+            const currency = order.paymentMethod?.includes('USDT') ? 'USDT' : 'BDT';
+            doc.text(`Total Amount: ${order.totalAmount} ${currency}`, 20, y);
+            doc.text(`Payment Method: ${order.paymentMethod}`, 20, y + 8);
+            doc.text(`Transaction ID: ${order.transactionId}`, 20, y + 16);
+            // Footer
+            doc.setFontSize(10);
+            doc.setTextColor(100, 100, 100);
+            doc.text('Thank you for choosing HGP', 105, 280, { align: 'center' });
+            pdfDataUri = doc.output('datauristring');
+          } catch (pdfErr: any) {
+            console.error("HGP PDF ERROR:", pdfErr);
+          }
         }
-      }
 
-      // Trigger Notifications
-      const telegramPromise = sendTelegramNotification(order);
-      if (!isZiniPay) {
-        const adminEmailPromise = sendOrderNotification(order, ADMIN_EMAIL, 'Admin', pdfDataUri, true);
-        await Promise.allSettled([telegramPromise, adminEmailPromise]);
-      } else {
-        await telegramPromise;
-      }
+        // Trigger Notifications
+        const telegramPromise = sendTelegramNotification(order);
+        if (!isZiniPay) {
+          const adminEmailPromise = sendOrderNotification(order, ADMIN_EMAIL, 'Admin', pdfDataUri, true);
+          await Promise.allSettled([telegramPromise, adminEmailPromise]);
+        } else {
+          await telegramPromise;
+        }
 
-      // Refresh data in the background to ensure sync
-      get().fetchOrders();
-      if (userIsAdmin) get().fetchAllOrders();
+        // Refresh data in the background to ensure sync
+        get().fetchOrders();
+        if (userIsAdmin) get().fetchAllOrders();
+      } catch (err) {
+        console.error("HGP background order processing error:", err);
+      }
     })();
 
     return true;
-  }
+  },
 }));
