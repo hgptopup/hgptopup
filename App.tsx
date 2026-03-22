@@ -146,7 +146,8 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     // Suppress specific Supabase unhandled rejections
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-      if (event.reason && event.reason.message && event.reason.message.includes('Refresh Token')) {
+      const reasonStr = event.reason?.message || String(event.reason);
+      if (reasonStr.includes('Refresh Token')) {
         event.preventDefault();
         supabase.auth.signOut().catch(() => {});
       }
@@ -171,8 +172,9 @@ const AppContent: React.FC = () => {
 
         const { data: { session }, error } = sessionResponse;
         if (error) {
-          if (!error.message.includes('Refresh Token')) {
-            console.error("Session error:", error.message);
+          const errMsg = error.message || String(error);
+          if (!errMsg.includes('Refresh Token')) {
+            console.error("Session error:", errMsg);
           }
           supabase.auth.signOut().catch(() => {});
           setSession(null); // Non-blocking
@@ -180,7 +182,8 @@ const AppContent: React.FC = () => {
           setSession(session?.user ?? null); // Non-blocking
         }
       } catch (err: any) {
-        if (err && err.message && !err.message.includes('Refresh Token')) {
+        const errMsg = err?.message || String(err);
+        if (!errMsg.includes('Refresh Token')) {
           console.error("Failed to get session:", err);
         }
         supabase.auth.signOut().catch(() => {});

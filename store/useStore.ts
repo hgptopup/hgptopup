@@ -146,8 +146,10 @@ export const useStore = create<AppState>((set, get) => ({
       if (!response.ok) throw new Error('Failed to fetch games');
       const data = await response.json();
       set({ games: data });
-    } catch (e) {
-      console.error("HGP FETCH ERROR (fetchGames):", e);
+    } catch (e: any) {
+      if (!String(e).includes('Failed to fetch')) {
+        console.error("HGP FETCH ERROR (fetchGames):", e);
+      }
       // Fallback to direct Supabase if proxy fails
       try {
         const { data, error } = await supabase.from('games').select('*').order('created_at', { ascending: false });
@@ -166,14 +168,20 @@ export const useStore = create<AppState>((set, get) => ({
       const data = await response.json();
       set({ heroBanners: data });
     } catch (e: any) {
-      console.error("HGP FETCH ERROR (fetchHeroBanners):", e.message || e);
+      if (!String(e).includes('Failed to fetch')) {
+        console.error("HGP FETCH ERROR (fetchHeroBanners):", e.message || e);
+      }
       // Fallback to direct Supabase query
       try {
         const { data, error } = await supabase.from('hero_banners').select('*').order('created_at', { ascending: false });
         if (!error && data) set({ heroBanners: data });
-        else if (error) console.error("HGP FALLBACK ERROR (fetchHeroBanners):", error.message);
+        else if (error && !String(error.message).includes('Failed to fetch')) {
+          console.error("HGP FALLBACK ERROR (fetchHeroBanners):", error.message);
+        }
       } catch (err: any) {
-        console.error("HGP FALLBACK CRASH (fetchHeroBanners):", err.message || err);
+        if (!String(err).includes('Failed to fetch')) {
+          console.error("HGP FALLBACK CRASH (fetchHeroBanners):", err.message || err);
+        }
       }
     }
   },
@@ -231,14 +239,20 @@ export const useStore = create<AppState>((set, get) => ({
       const data = await response.json();
       set({ floatingIcons: data });
     } catch (e: any) {
-      console.error("HGP FETCH ERROR (fetchFloatingIcons):", e.message || e);
+      if (!String(e).includes('Failed to fetch')) {
+        console.error("HGP FETCH ERROR (fetchFloatingIcons):", e.message || e);
+      }
       // Fallback to direct Supabase query
       try {
         const { data, error } = await supabase.from('hero_floating_icons').select('*').order('created_at', { ascending: false });
         if (!error && data) set({ floatingIcons: data });
-        else if (error) console.error("HGP FALLBACK ERROR (fetchFloatingIcons):", error.message);
+        else if (error && !String(error.message).includes('Failed to fetch')) {
+          console.error("HGP FALLBACK ERROR (fetchFloatingIcons):", error.message);
+        }
       } catch (err: any) {
-        console.error("HGP FALLBACK CRASH (fetchFloatingIcons):", err.message || err);
+        if (!String(err).includes('Failed to fetch')) {
+          console.error("HGP FALLBACK CRASH (fetchFloatingIcons):", err.message || err);
+        }
       }
     }
   },
@@ -285,8 +299,10 @@ export const useStore = create<AppState>((set, get) => ({
           bdtRate: Number(data.bdt_rate) || 125
         });
       }
-    } catch (e) {
-      console.error("HGP FETCH ERROR (fetchSiteSettings):", e);
+    } catch (e: any) {
+      if (!String(e).includes('Failed to fetch')) {
+        console.error("HGP FETCH ERROR (fetchSiteSettings):", e);
+      }
       // Fallback
       try {
         const { data: settings } = await supabase.from('site_settings').select('logo_url, bdt_rate').eq('id', 'main').maybeSingle();
@@ -295,8 +311,10 @@ export const useStore = create<AppState>((set, get) => ({
           logoUrl: settings?.logo_url || null,
           bdtRate: Number(settings?.bdt_rate) || 125
         });
-      } catch (err) {
-        console.error("HGP FALLBACK ERROR (fetchSiteSettings):", err);
+      } catch (err: any) {
+        if (!String(err).includes('Failed to fetch')) {
+          console.error("HGP FALLBACK ERROR (fetchSiteSettings):", err);
+        }
       }
     }
   },
@@ -340,12 +358,16 @@ export const useStore = create<AppState>((set, get) => ({
       }
 
       if (error) {
-        console.error("HGP DB ERROR (fetchAllUsers):", error);
+        if (!String(error.message).includes('Failed to fetch')) {
+          console.error("HGP DB ERROR (fetchAllUsers):", error);
+        }
         return;
       }
       if (data) set({ allUsers: data });
-    } catch (e) {
-      console.error("HGP FETCH ERROR (fetchAllUsers):", e);
+    } catch (e: any) {
+      if (!String(e).includes('Failed to fetch')) {
+        console.error("HGP FETCH ERROR (fetchAllUsers):", e);
+      }
     }
   },
 
@@ -450,7 +472,9 @@ export const useStore = create<AppState>((set, get) => ({
       }
 
       if (error) {
-        console.error("HGP DB ERROR (fetchAllOrders):", error);
+        if (!String(error.message).includes('Failed to fetch')) {
+          console.error("HGP DB ERROR (fetchAllOrders):", error);
+        }
         return;
       }
       if (data) {
@@ -468,8 +492,10 @@ export const useStore = create<AppState>((set, get) => ({
           screenshot: o.screenshot
         }))});
       }
-    } catch (e) {
-      console.error("HGP FETCH ERROR (fetchAllOrders):", e);
+    } catch (e: any) {
+      if (!String(e).includes('Failed to fetch')) {
+        console.error("HGP FETCH ERROR (fetchAllOrders):", e);
+      }
     }
   },
 
