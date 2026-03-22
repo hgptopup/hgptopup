@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS public.orders (
   customer_name TEXT,
   items JSONB NOT NULL DEFAULT '[]'::jsonb,
   total_amount NUMERIC NOT NULL,
-  status TEXT DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'COMPLETED', 'CANCELLED')),
+  status TEXT DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'PROCESSING', 'COMPLETED', 'CANCELLED')),
   transaction_id TEXT,
   payment_method TEXT,
   screenshot TEXT,
@@ -114,7 +114,7 @@ DROP POLICY IF EXISTS "Users insert orders" ON public.orders;
 CREATE POLICY "Users insert orders" ON public.orders FOR INSERT WITH CHECK (true); -- Allow guest/logged-in order insertion
 
 DROP POLICY IF EXISTS "Users view own orders" ON public.orders;
-CREATE POLICY "Users view own orders" ON public.orders FOR SELECT USING (auth.uid() = user_id OR user_id IS NULL);
+CREATE POLICY "Users view own orders" ON public.orders FOR SELECT USING (auth.uid() = user_id);
 
 DROP POLICY IF EXISTS "Admin control orders" ON public.orders;
 CREATE POLICY "Admin control orders" ON public.orders FOR ALL USING (auth.jwt() ->> 'email' = 'hasibulgamepoint02@gmail.com');
@@ -158,7 +158,7 @@ BEGIN
 
   -- Update the order
   UPDATE public.orders
-  SET transaction_id = p_txn_id
+  SET transaction_id = p_txn_id, status = 'PROCESSING'
   WHERE id = p_order_id
   RETURNING * INTO v_order;
 

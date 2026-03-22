@@ -302,7 +302,7 @@ app.post("/api/payment/verify", async (req, res) => {
       // Try to update the order transaction ID using the Supabase client
       const { error: updateError } = await supabase
         .from('orders')
-        .update({ transaction_id: actualTransactionId })
+        .update({ transaction_id: actualTransactionId, status: 'PROCESSING' })
         .eq('id', orderId);
 
       if (updateError) {
@@ -367,7 +367,7 @@ app.post("/api/payment/webhook", async (req, res) => {
       // Try to update the order transaction ID using the Supabase client
       const { error: updateError } = await supabase
         .from('orders')
-        .update({ transaction_id: transactionId })
+        .update({ transaction_id: transactionId, status: 'PROCESSING' })
         .eq('id', orderId);
 
       if (updateError) {

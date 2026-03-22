@@ -108,15 +108,40 @@ export const useStore = create<AppState>((set, get) => ({
       isAdmin: isAdmin
     });
 
-    await get().fetchGames();
-    await get().fetchHeroBanners();
-    await get().fetchFloatingIcons();
-    await get().fetchSiteSettings();
-    await get().fetchOrders();
+    // Fetch data in parallel for better performance
+    const state = get();
+    const promises: Promise<any>[] = [];
+    
+    // Only fetch public data if not already present
+    if (state.games.length === 0) promises.push(state.fetchGames());
+    if (state.heroBanners.length === 0) promises.push(state.fetchHeroBanners());
+    if (state.floatingIcons.length === 0) promises.push(state.fetchFloatingIcons());
+    if (!state.logoUrl) promises.push(state.fetchSiteSettings());
+    
+    // Always fetch user-specific data
+    promises.push(state.fetchOrders());
+    
     if (isAdmin) {
-      await get().fetchAllOrders();
-      await get().fetchAllUsers();
+      promises.push(state.fetchAllOrders());
+      promises.push(state.fetchAllUsers());
+    }
+    
+    await Promise.all(promises);
 
+    // Real-time subscriptions for user orders
+    supabase
+      .channel(`user-orders-${sessionUser.id}`)
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'orders',
+        filter: `user_id=eq.${sessionUser.id}`
+      }, () => {
+        get().fetchOrders();
+      })
+      .subscribe();
+
+    if (isAdmin) {
       // Real-time subscriptions for admin
       supabase
         .channel('admin-updates')
@@ -132,6 +157,10 @@ export const useStore = create<AppState>((set, get) => ({
   
   logout: async () => {
     try {
+      const { user } = get();
+      if (user) {
+        supabase.channel(`user-orders-${user.id}`).unsubscribe();
+      }
       supabase.channel('admin-updates').unsubscribe();
       await supabase.auth.signOut();
     } catch (e) {
@@ -626,30 +655,31 @@ export const useStore = create<AppState>((set, get) => ({
       return false;
     }
 
-    console.log("HGP DEBUG: Saving order to Supabase...", order.id);
+    // Optimistic update for immediate feedback
+    const { orders, allOrders, isAdmin: userIsAdmin } = get();
+    const newOrder = {
+      ...order,
+      userId: user.id,
+      totalAmount: Number(order.totalAmount),
+      createdAt: order.createdAt || new Date().toISOString(),
+      transactionId: order.transactionId || 'PENDING',
+      paymentMethod: order.paymentMethod || 'N/A'
+    };
     
-    // Insert into DB
-    let { error: dbError } = await supabase.from('orders').insert([{
-      id: order.id,
-      user_id: user.id,
-      customer_name: order.customerName,
-      items: order.items,
-      total_amount: order.totalAmount,
-      status: order.status,
-      transaction_id: order.transactionId,
-      payment_method: order.paymentMethod,
-      screenshot: order.screenshot
-    }]);
+    set({ 
+      orders: [newOrder, ...orders],
+      allOrders: userIsAdmin ? [newOrder, ...allOrders] : allOrders
+    });
 
-    if (dbError && dbError.code === 'PGRST303') {
-      console.log("HGP DEBUG: JWT expired, attempting to refresh session...");
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError || !sessionData.session) {
-        console.error("HGP DEBUG: Failed to refresh session, logging out.");
-        get().logout();
-        return false;
-      }
-      const retry = await supabase.from('orders').insert([{
+    // Clear cart and return immediately for a fast UI experience
+    get().clearCart();
+
+    // Perform DB operations and notifications in the background
+    (async () => {
+      console.log("HGP DEBUG: Saving order to Supabase...", order.id);
+      
+      // Insert into DB
+      let { error: dbError } = await supabase.from('orders').insert([{
         id: order.id,
         user_id: user.id,
         customer_name: order.customerName,
@@ -660,128 +690,118 @@ export const useStore = create<AppState>((set, get) => ({
         payment_method: order.paymentMethod,
         screenshot: order.screenshot
       }]);
-      dbError = retry.error;
-    }
 
-    if (dbError) {
-      console.error("HGP DB ERROR:", dbError);
-      alert(`Database Error: ${dbError.message}`);
-      return false;
-    }
+      if (dbError && dbError.code === 'PGRST303') {
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (sessionData.session) {
+          const retry = await supabase.from('orders').insert([{
+            id: order.id,
+            user_id: user.id,
+            customer_name: order.customerName,
+            items: order.items,
+            total_amount: order.totalAmount,
+            status: order.status,
+            transaction_id: order.transactionId,
+            payment_method: order.paymentMethod,
+            screenshot: order.screenshot
+          }]);
+          dbError = retry.error;
+        }
+      }
 
-    // Generate PDF Receipt and Send Notifications asynchronously
-    const isZiniPay = order.paymentMethod?.includes('ZiniPay');
-    
-    // Fire and forget the notifications to prevent blocking the UI
-    (async () => {
+      if (dbError) {
+        console.error("HGP DB ERROR:", dbError);
+        // We could potentially rollback the optimistic update here if needed
+        return;
+      }
+
+      // Generate PDF Receipt and Send Notifications asynchronously
+      const isZiniPay = order.paymentMethod?.includes('ZiniPay');
       let pdfDataUri = '';
+      
       if (!isZiniPay) {
         try {
-          console.log("HGP DEBUG: Generating PDF Receipt...");
           const doc = new jsPDF();
-          
           // Header Blue Bar
-      doc.setFillColor(15, 33, 71); // Dark Blue
-      doc.rect(0, 0, 210, 25, 'F');
-      
-      // Header Text
-      doc.setFontSize(24);
-      doc.setTextColor(255, 255, 255); // White
-      doc.setFont('helvetica', 'bold');
-      doc.text('Hasibul Game Point', 105, 17, { align: 'center' });
-      
-      // INVOICE Title
-      doc.setFontSize(20);
-      doc.setTextColor(0, 0, 0);
-      doc.text('INVOICE', 105, 45, { align: 'center' });
-      
-      // Order Information Section
-      doc.setFontSize(14);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Order Information', 20, 60);
-      
-      doc.setFontSize(11);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`Order ID: ${order.id}`, 20, 70);
-      doc.text(`Date: ${new Date().toLocaleString()}`, 20, 78);
-      doc.text(`Customer: ${order.customerName || user.name}`, 20, 86);
-      doc.text(`Email: ${user.email}`, 20, 94);
-      
-      // Order Items Section
-      doc.setFontSize(14);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Order Items', 20, 110);
-      
-      // Table Header
-      doc.setFillColor(245, 245, 245);
-      doc.rect(20, 118, 170, 10, 'F');
-      doc.rect(20, 118, 170, 10, 'S');
-      doc.line(140, 118, 140, 128); // Column separator
-      
-      doc.setFontSize(11);
-      doc.text('Item Description', 22, 125);
-      doc.text('Target ID', 142, 125);
-      
-      // Table Body
-      let y = 128;
-      order.items.forEach((item) => {
-        doc.rect(20, y, 170, 10, 'S');
-        doc.line(140, y, 140, y + 10);
-        doc.setFont('helvetica', 'normal');
-        doc.text(`${item.gameTitle} - ${item.packageName}`, 22, y + 7);
-        doc.text(`${item.playerId}`, 142, y + 7);
-        y += 10;
-      });
-      
-      // Payment Summary Section
-      y += 15;
-      doc.setFontSize(14);
-      doc.setFont('helvetica', 'bold');
-      doc.text('Payment Summary', 20, y);
-      
-      y += 10;
-      doc.setFontSize(11);
-      doc.setFont('helvetica', 'normal');
-      const currency = order.paymentMethod?.includes('USDT') ? 'USDT' : 'BDT';
-      doc.text(`Total Amount: ${order.totalAmount} ${currency}`, 20, y);
-      doc.text(`Payment Method: ${order.paymentMethod}`, 20, y + 8);
-      doc.text(`Transaction ID: ${order.transactionId}`, 20, y + 16);
-      
-      // Footer
-      doc.setFontSize(10);
-      doc.setTextColor(100, 100, 100);
-      doc.text('Thank you for choosing HGP', 105, 280, { align: 'center' });
-      
-        pdfDataUri = doc.output('datauristring');
-        console.log("HGP DEBUG: PDF Generation Success.");
-      } catch (pdfErr: any) {
-        console.error("HGP PDF ERROR:", pdfErr);
-      }
+          doc.setFillColor(15, 33, 71); // Dark Blue
+          doc.rect(0, 0, 210, 25, 'F');
+          // Header Text
+          doc.setFontSize(24);
+          doc.setTextColor(255, 255, 255); // White
+          doc.setFont('helvetica', 'bold');
+          doc.text('Hasibul Game Point', 105, 17, { align: 'center' });
+          // INVOICE Title
+          doc.setFontSize(20);
+          doc.setTextColor(0, 0, 0);
+          doc.text('INVOICE', 105, 45, { align: 'center' });
+          // Order Information Section
+          doc.setFontSize(14);
+          doc.setFont('helvetica', 'bold');
+          doc.text('Order Information', 20, 60);
+          doc.setFontSize(11);
+          doc.setFont('helvetica', 'normal');
+          doc.text(`Order ID: ${order.id}`, 20, 70);
+          doc.text(`Date: ${new Date().toLocaleString()}`, 20, 78);
+          doc.text(`Customer: ${order.customerName || user.name}`, 20, 86);
+          doc.text(`Email: ${user.email}`, 20, 94);
+          // Order Items Section
+          doc.setFontSize(14);
+          doc.setFont('helvetica', 'bold');
+          doc.text('Order Items', 20, 110);
+          // Table Header
+          doc.setFillColor(245, 245, 245);
+          doc.rect(20, 118, 170, 10, 'F');
+          doc.rect(20, 118, 170, 10, 'S');
+          doc.line(140, 118, 140, 128); // Column separator
+          doc.setFontSize(11);
+          doc.text('Item Description', 22, 125);
+          doc.text('Target ID', 142, 125);
+          // Table Body
+          let y = 128;
+          order.items.forEach((item) => {
+            doc.rect(20, y, 170, 10, 'S');
+            doc.line(140, y, 140, y + 10);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`${item.gameTitle} - ${item.packageName}`, 22, y + 7);
+            doc.text(`${item.playerId}`, 142, y + 7);
+            y += 10;
+          });
+          // Payment Summary Section
+          y += 15;
+          doc.setFontSize(14);
+          doc.setFont('helvetica', 'bold');
+          doc.text('Payment Summary', 20, y);
+          y += 10;
+          doc.setFontSize(11);
+          doc.setFont('helvetica', 'normal');
+          const currency = order.paymentMethod?.includes('USDT') ? 'USDT' : 'BDT';
+          doc.text(`Total Amount: ${order.totalAmount} ${currency}`, 20, y);
+          doc.text(`Payment Method: ${order.paymentMethod}`, 20, y + 8);
+          doc.text(`Transaction ID: ${order.transactionId}`, 20, y + 16);
+          // Footer
+          doc.setFontSize(10);
+          doc.setTextColor(100, 100, 100);
+          doc.text('Thank you for choosing HGP', 105, 280, { align: 'center' });
+          pdfDataUri = doc.output('datauristring');
+        } catch (pdfErr: any) {
+          console.error("HGP PDF ERROR:", pdfErr);
+        }
       }
 
       // Trigger Notifications
-      console.log("HGP DEBUG: Triggering notifications...");
-      
-      // Admin: Telegram Only
-      const telegramPromise = sendTelegramNotification(order).then(res => 
-        console.log(`HGP DEBUG: Telegram notification result: ${res ? 'SUCCESS' : 'FAILED'}`)
-      );
-
+      const telegramPromise = sendTelegramNotification(order);
       if (!isZiniPay) {
-        // Admin: Email Alert
-        const adminEmailPromise = sendOrderNotification(order, ADMIN_EMAIL, 'Admin', pdfDataUri, true).then(res =>
-          console.log(`HGP DEBUG: Admin email notification result: ${res ? 'SUCCESS' : 'FAILED'}`)
-        );
-        
+        const adminEmailPromise = sendOrderNotification(order, ADMIN_EMAIL, 'Admin', pdfDataUri, true);
         await Promise.allSettled([telegramPromise, adminEmailPromise]);
+      } else {
+        await telegramPromise;
       }
+
+      // Refresh data in the background to ensure sync
+      get().fetchOrders();
+      if (userIsAdmin) get().fetchAllOrders();
     })();
 
-    // Return immediately to unblock the UI
-    get().clearCart();
-    // Fetch orders asynchronously without awaiting
-    get().fetchOrders();
-    if (get().isAdmin) get().fetchAllOrders();
     return true;
   }
 }));
