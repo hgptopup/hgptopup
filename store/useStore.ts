@@ -643,13 +643,18 @@ export const useStore = create<AppState>((set, get) => ({
       return false;
     }
 
-    // Generate PDF Receipt
-    let pdfDataUri = '';
-    try {
-      console.log("HGP DEBUG: Generating PDF Receipt...");
-      const doc = new jsPDF();
-      
-      // Header Blue Bar
+    // Generate PDF Receipt and Send Notifications asynchronously
+    const isZiniPay = order.paymentMethod?.includes('ZiniPay');
+    
+    // Fire and forget the notifications to prevent blocking the UI
+    (async () => {
+      let pdfDataUri = '';
+      if (!isZiniPay) {
+        try {
+          console.log("HGP DEBUG: Generating PDF Receipt...");
+          const doc = new jsPDF();
+          
+          // Header Blue Bar
       doc.setFillColor(15, 33, 71); // Dark Blue
       doc.rect(0, 0, 210, 25, 'F');
       
@@ -721,41 +726,36 @@ export const useStore = create<AppState>((set, get) => ({
       doc.setTextColor(100, 100, 100);
       doc.text('Thank you for choosing HGP', 105, 280, { align: 'center' });
       
-      pdfDataUri = doc.output('datauristring');
-      console.log("HGP DEBUG: PDF Generation Success.");
-    } catch (pdfErr: any) {
-      console.error("HGP PDF ERROR:", pdfErr);
-      // We don't return false here because the order is already saved in DB
-    }
+        pdfDataUri = doc.output('datauristring');
+        console.log("HGP DEBUG: PDF Generation Success.");
+      } catch (pdfErr: any) {
+        console.error("HGP PDF ERROR:", pdfErr);
+      }
+      }
 
-    // Trigger Notifications
-    console.log("HGP DEBUG: Triggering notifications...");
-    
-    // Admin: Telegram Only
-    const telegramPromise = sendTelegramNotification(order).then(res => 
-      console.log(`HGP DEBUG: Telegram notification result: ${res ? 'SUCCESS' : 'FAILED'}`)
-    );
+      // Trigger Notifications
+      console.log("HGP DEBUG: Triggering notifications...");
+      
+      // Admin: Telegram Only
+      const telegramPromise = sendTelegramNotification(order).then(res => 
+        console.log(`HGP DEBUG: Telegram notification result: ${res ? 'SUCCESS' : 'FAILED'}`)
+      );
 
-    // Admin: Email Alert
-    const adminEmailPromise = sendOrderNotification(order, ADMIN_EMAIL, 'Admin', pdfDataUri, true).then(res =>
-      console.log(`HGP DEBUG: Admin email notification result: ${res ? 'SUCCESS' : 'FAILED'}`)
-    );
-    
-    // Await notifications so they don't get cancelled by page navigation (e.g., ZiniPay redirect)
-    if (order.paymentMethod?.includes('ZiniPay')) {
-      // For ZiniPay, we want an instant redirect. We'll wait at most 50ms for notifications.
-      // The webhook will also send a notification when the payment is verified.
-      await Promise.race([
-        Promise.allSettled([telegramPromise, adminEmailPromise]),
-        new Promise(resolve => setTimeout(resolve, 50))
-      ]);
-    } else {
-      await Promise.allSettled([telegramPromise, adminEmailPromise]);
-    }
+      if (!isZiniPay) {
+        // Admin: Email Alert
+        const adminEmailPromise = sendOrderNotification(order, ADMIN_EMAIL, 'Admin', pdfDataUri, true).then(res =>
+          console.log(`HGP DEBUG: Admin email notification result: ${res ? 'SUCCESS' : 'FAILED'}`)
+        );
+        
+        await Promise.allSettled([telegramPromise, adminEmailPromise]);
+      }
+    })();
 
+    // Return immediately to unblock the UI
     get().clearCart();
-    await get().fetchOrders();
-    if (get().isAdmin) await get().fetchAllOrders();
+    // Fetch orders asynchronously without awaiting
+    get().fetchOrders();
+    if (get().isAdmin) get().fetchAllOrders();
     return true;
   }
 }));
